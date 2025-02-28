@@ -89,7 +89,7 @@
 
 <div class="sticky-container">
 	{#if $noteInstance}
-		<span>current note: {$noteInstance.name}</span>
+		<span>current note: {$noteInstance.path}{$noteInstance.name}</span>
 	{/if}
 	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2">
 		<div class="w-fit place-self-center">

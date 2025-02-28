@@ -16,27 +16,30 @@ const trpc = createTRPCProxyClient<AppRouter>({
 export async function fetchNotes() {
 	const notes = await trpc.noteList.query();
 
+	console.log('fetched notes B: ', await notes);
+
 	return await notes;
 }
 
-export async function createNote(name: string) {
+export async function createNote(input: { path: string; name: string }) {
 	const note = await trpc.noteCreate.mutate({
-		name: name,
+		path: input.path,
+		name: input.name,
 		content: 'This is a new note'
 	});
 	return await note;
 }
 
-export async function getNote(id: number) {
-	const note = (await trpc.noteById.query(id)).at(0);
+export async function getNote(input: { path: string; name: string }) {
+	const note = (await trpc.noteByPath.query({ path: input.path, name: input.name })).at(0);
 	return await note;
 }
 
-export async function updateNote(id: number, name: string, content: string) {
+export async function updateNote(input: { path: string; name: string; content: string }) {
 	const note = await trpc.noteUpdate.mutate({
-		id: id,
-		name: name,
-		content: content
+		path: input.path,
+		name: input.name,
+		content: input.content
 	});
 	return await note;
 }
