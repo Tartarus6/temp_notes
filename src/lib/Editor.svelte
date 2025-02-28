@@ -3,8 +3,7 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
-	import { saveContent, loadContent } from '$lib/database';
-	import { editorInstance, noteIdInstance, notePathInstance } from '$lib/editorStore';
+	import { editorInstance, noteInstance } from '$lib/editorStore';
 
 	import Document from '@tiptap/extension-document';
 	import Paragraph from '@tiptap/extension-paragraph';
@@ -31,11 +30,12 @@
 	let editorElement: HTMLDivElement;
 
 	onMount(() => {
-		// Check local storage for a previously saved noteId, open that note if it exists
+		// Check local storage for a previously saved note, open that note if it exists
 		if (typeof window !== 'undefined') {
-			const storedNoteId = localStorage.getItem('noteId');
-			if (storedNoteId) {
-				noteIdInstance.set(storedNoteId);
+			const storedNoteName = localStorage.getItem('noteName');
+			const storedNotePath = localStorage.getItem('notePath');
+			if (storedNoteName && storedNotePath) {
+				// noteNameInstance.set(storedNoteName);
 			}
 		}
 
@@ -81,10 +81,6 @@
 
 		editorInstance.set(editor);
 
-		if ($noteIdInstance && editor) {
-			loadContent($noteIdInstance, editor);
-		}
-
 		return () => {
 			editor.destroy();
 		};
@@ -92,7 +88,9 @@
 </script>
 
 <div class="sticky-container">
-	<span>current note: {$notePathInstance} {$noteIdInstance}</span>
+	{#if $noteInstance}
+		<span>current note: {$noteInstance.name}</span>
+	{/if}
 	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2">
 		<div class="w-fit place-self-center">
 			{#if $editorInstance}
@@ -138,23 +136,6 @@
 					class:active={$editorInstance.isActive({ textAlign: 'justify' })}
 				>
 					Justify
-				</button>
-				<button
-					onclick={async () =>
-						$notePathInstance &&
-						$noteIdInstance &&
-						(await saveContent($noteIdInstance, $editorInstance, $notePathInstance))}
-				>
-					Save</button
-				>
-				<button
-					onclick={async () =>
-						$editorInstance &&
-						$noteIdInstance &&
-						(await loadContent($noteIdInstance, $editorInstance))}
-					disabled={!$noteIdInstance}
-				>
-					Load
 				</button>
 			{/if}
 		</div>
