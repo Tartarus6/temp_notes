@@ -40,8 +40,10 @@
 	}
 </script>
 
-<div class="flex h-full w-48 flex-col place-items-start bg-red-400 text-start">
-	<button onclick={() => saveNote()} class=" my-1 w-full bg-blue-400 p-1 text-left">
+<div
+	class="grid h-full w-48 grid-cols-1 place-items-start content-start gap-2 bg-red-400 p-1 text-start"
+>
+	<button onclick={() => saveNote()} class=" my-1 w-full bg-green-400 p-1 text-left">
 		<span>save note</span>
 	</button>
 	<input
@@ -49,9 +51,10 @@
 		bind:value={newNoteName}
 		placeholder="new note name"
 		onkeydown={(e) => e.key === 'Enter' && newNote(newNoteName)}
+		class="w-full"
 	/>
 	{#each notesList as note}
-		<button onclick={() => openNote(note)} class=" my-1 w-full bg-blue-400 p-1 text-left">
+		<button onclick={() => openNote(note)} class=" w-full bg-blue-400 p-1 text-left">
 			<span>{note.name}</span>
 		</button>
 	{/each}
