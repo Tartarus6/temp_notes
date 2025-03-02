@@ -3,7 +3,7 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
-	import { editorInstance, noteInstance } from '$lib/editorStore';
+	import { editorState } from '$lib/editorStore.svelte';
 
 	import Document from '@tiptap/extension-document';
 	import Paragraph from '@tiptap/extension-paragraph';
@@ -75,11 +75,11 @@
 			content: '<p>Hello World!</p>', // Initial content
 			onTransaction: () => {
 				// force re-render so `editor.isActive` works as expected
-				editorInstance.set(editor);
+				editorState.editor = editor;
 			}
 		});
 
-		editorInstance.set(editor);
+		editorState.editor = editor;
 
 		return () => {
 			editor.destroy();
@@ -88,52 +88,61 @@
 </script>
 
 <div class="sticky-container">
-	{#if $noteInstance}
-		<span>current note: {$noteInstance.path}{$noteInstance.name}</span>
+	{#if editorState.note}
+		<span>current note: {editorState.note.path}{editorState.note.name}</span>
 	{/if}
 	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2">
 		<div class="w-fit place-self-center">
-			{#if $editorInstance}
+			{#if editorState.editor}
 				<button
-					onclick={() => $editorInstance.chain().focus().toggleHeading({ level: 1 }).run()}
-					class:active={$editorInstance.isActive('heading', { level: 1 })}
+					onclick={() =>
+						editorState.editor &&
+						editorState.editor.chain().focus().toggleHeading({ level: 1 }).run()}
+					class:active={editorState.editor.isActive('heading', { level: 1 })}
 				>
 					H1
 				</button>
 				<button
-					onclick={() => $editorInstance.chain().focus().toggleHeading({ level: 2 }).run()}
-					class:active={$editorInstance.isActive('heading', { level: 2 })}
+					onclick={() =>
+						editorState.editor &&
+						editorState.editor.chain().focus().toggleHeading({ level: 2 }).run()}
+					class:active={editorState.editor.isActive('heading', { level: 2 })}
 				>
 					H2
 				</button>
 				<button
-					onclick={() => $editorInstance.chain().focus().setParagraph().run()}
-					class:active={$editorInstance.isActive('paragraph')}
+					onclick={() =>
+						editorState.editor && editorState.editor.chain().focus().setParagraph().run()}
+					class:active={editorState.editor.isActive('paragraph')}
 				>
 					P
 				</button>
 
 				<button
-					onclick={() => $editorInstance.chain().focus().setTextAlign('left').run()}
-					class:active={$editorInstance.isActive({ textAlign: 'left' })}
+					onclick={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('left').run()}
+					class:active={editorState.editor.isActive({ textAlign: 'left' })}
 				>
 					Left
 				</button>
 				<button
-					onclick={() => $editorInstance.chain().focus().setTextAlign('center').run()}
-					class:active={$editorInstance.isActive({ textAlign: 'center' })}
+					onclick={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('center').run()}
+					class:active={editorState.editor.isActive({ textAlign: 'center' })}
 				>
 					Center
 				</button>
 				<button
-					onclick={() => $editorInstance.chain().focus().setTextAlign('right').run()}
-					class:active={$editorInstance.isActive({ textAlign: 'right' })}
+					onclick={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('right').run()}
+					class:active={editorState.editor.isActive({ textAlign: 'right' })}
 				>
 					Right
 				</button>
 				<button
-					onclick={() => $editorInstance.chain().focus().setTextAlign('justify').run()}
-					class:active={$editorInstance.isActive({ textAlign: 'justify' })}
+					onclick={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('justify').run()}
+					class:active={editorState.editor.isActive({ textAlign: 'justify' })}
 				>
 					Justify
 				</button>

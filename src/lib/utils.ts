@@ -1,4 +1,6 @@
 import type { Note } from '$lib/server/server';
+import { editorState } from './editorStore.svelte';
+import { getNote, updateNote } from './client/client';
 
 export type FileNode = {
 	name: string;
@@ -9,14 +11,10 @@ export type FileNode = {
 };
 
 export function buildFileTree(notes: Note[]): FileNode[] {
-	console.log('fetched noted D: ', notes);
-
 	const root: FileNode = { name: 'root', path: '', type: 'directory', children: [] };
 	const pathMap: { [path: string]: FileNode } = { '/': root };
 
 	for (const note of notes) {
-		console.log('note: ', note.path, note.name);
-
 		const parts = (note.path + note.name).split('/').filter(Boolean); // Split the path into segments
 		let currentPath = '/';
 		let parent = root;
@@ -42,4 +40,26 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 		}
 	}
 	return root.children || [];
+}
+
+export async function openNote(input: { name: string; path: string }) {
+	saveNote().then(async () => {
+		const note = await getNote({ path: input.path, name: input.name });
+		if (editorState.editor && note) {
+			editorState.editor.commands.setContent(note.content);
+			editorState.note = note;
+		}
+	});
+}
+
+export async function saveNote() {
+	if (editorState.editor && editorState.note && editorState.note.path) {
+		const note = await updateNote({
+			path: editorState.note.path,
+			name: editorState.note.name,
+			content: editorState.editor.getHTML()
+		});
+		return note;
+	}
+	return null;
 }

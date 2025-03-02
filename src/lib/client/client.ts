@@ -16,8 +16,6 @@ const trpc = createTRPCProxyClient<AppRouter>({
 export async function fetchNotes() {
 	const notes = await trpc.noteList.query();
 
-	console.log('fetched notes B: ', await notes);
-
 	return await notes;
 }
 
@@ -41,5 +39,5 @@ export async function updateNote(input: { path: string; name: string; content: s
 		name: input.name,
 		content: input.content
 	});
-	return await note;
+	return await note[0];
 }

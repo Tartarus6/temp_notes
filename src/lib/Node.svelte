@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { type FileNode } from './utils';
-	import { fetchNotes, updateNote, createNote } from '$lib/client/client';
-	import { editorInstance, noteInstance } from '$lib/editorStore';
+	import { openNote } from './utils';
 
 	export let node: FileNode;
 	export let indent = 0;
@@ -15,13 +14,18 @@
 
 <div style="padding-left: {indent}px">
 	{#if node.type === 'directory'}
-		<span onclick={toggleOpen}>
+		<button
+			type="button"
+			onclick={toggleOpen}
+			onkeydown={(e) => e.key === 'Enter' && toggleOpen()}
+			aria-expanded={open}
+		>
 			{node.name}
 			{open ? '(open)' : '(closed)'}
-		</span>
+		</button>
 	{:else}
 		<button
-			onclick={() => console.log('sure do wish i could open', node.name, 'right now :/')}
+			onclick={() => openNote({ name: node.name, path: node.path })}
 			class=" w-full bg-blue-400 p-1 text-left"
 		>
 			<span>{node.name}</span>

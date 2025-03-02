@@ -10,12 +10,17 @@ const listenPort = 3000;
 const appRouter = router({
 	noteList: publicProcedure.query(async () => {
 		const notes = await db.select().from(notesTable);
-		console.log('fetched notes A: ', notes);
 		return notes;
 	}),
 
 	noteCreate: publicProcedure
-		.input(z.object({ name: z.string(), path: z.string(), content: z.string() }))
+		.input(
+			z.object({
+				name: z.string(),
+				path: z.string().startsWith('/').endsWith('/'),
+				content: z.string()
+			})
+		)
 		.mutation(async (opts) => {
 			const { input } = opts;
 			const note = await db

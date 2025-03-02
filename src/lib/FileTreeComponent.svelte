@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { fetchNotes, updateNote, createNote } from '$lib/client/client';
-	import { editorInstance, noteInstance } from '$lib/editorStore';
+	import { editorState } from '$lib/editorStore.svelte';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, type FileNode } from './utils';
+	import { buildFileTree, saveNote, type FileNode } from './utils';
 
 	import Node from './Node.svelte';
 
@@ -15,8 +15,6 @@
 	async function updateTree() {
 		notesList = await fetchNotes();
 
-		console.log('fetched notes C: ', notesList);
-
 		fileTree = buildFileTree(await notesList);
 	}
 
@@ -28,31 +26,6 @@
 		console.log('new note: ', await note);
 		if (note) {
 			updateTree();
-		}
-	}
-
-	async function openNote(node: FileNode) {
-		if (node.type === 'file' && node.note) {
-			// Check if it's a file
-			saveNote().then(() => {
-				if ($editorInstance && node.note) {
-					$editorInstance.commands.setContent(node.note.content);
-					noteInstance.set(node.note);
-				}
-			});
-		}
-	}
-
-	async function saveNote() {
-		if ($editorInstance && $noteInstance && $noteInstance.path) {
-			const note = await updateNote({
-				path: $noteInstance.path,
-				name: $noteInstance.name,
-				content: $editorInstance.getHTML()
-			});
-			if (note) {
-				updateTree();
-			}
 		}
 	}
 </script>
