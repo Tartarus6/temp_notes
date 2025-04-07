@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 body {
-	background: #100f0f;
+	background: var(--color-slate-900);
 	color: white;
 }
 h1 {

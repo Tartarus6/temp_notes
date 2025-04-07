@@ -31,15 +31,9 @@
 </script>
 
 <div
-	class="grid h-full w-48 grid-cols-1 place-items-start content-start gap-2 bg-red-400 p-1 text-start"
+	class="grid h-full w-48 grid-cols-1 place-items-start content-start gap-2 bg-slate-800 p-1 text-start"
 >
-	<button
-		onclick={() => console.log('file tree: ', fileTree)}
-		class=" my-1 w-full bg-yellow-400 p-1 text-left"
-	>
-		<span>log tree</span>
-	</button>
-	<button onclick={() => saveNote()} class=" my-1 w-full bg-green-400 p-1 text-left">
+	<button onmousedown={() => saveNote()} class=" my-1 w-full bg-green-400 p-1 text-left">
 		<span>save note</span>
 	</button>
 	<input
