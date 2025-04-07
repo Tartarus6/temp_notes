@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Editor from '$lib/Editor.svelte';
-	import FileTree from '$lib/FileTree.svelte';
-	import type { SvelteComponent } from 'svelte';
+	import { Editor } from '@tiptap/core';
+	import EditorComponent from '$lib/EditorComponent.svelte';
+	import FileTreeComponent from '$lib/FileTreeComponent.svelte';
 
-	let editorComponent: SvelteComponent;
+	import { editorState } from '$lib/editorStore.svelte';
 </script>
 
 <div class="grid h-screen grid-flow-row grid-cols-[auto_1fr]">
-	<FileTree />
-	<Editor bind:this={editorComponent} />
+	<FileTreeComponent />
+	<EditorComponent />
 </div>
