@@ -16,7 +16,7 @@
 	{#if node.type === 'directory'}
 		<button
 			type="button"
-			onclick={toggleOpen}
+			onmousedown={toggleOpen}
 			onkeydown={(e) => e.key === 'Enter' && toggleOpen()}
 			aria-expanded={open}
 		>
@@ -25,7 +25,7 @@
 		</button>
 	{:else}
 		<button
-			onclick={() => openNote({ name: node.name, path: node.path })}
+			onmousedown={() => openNote({ name: node.name, path: node.path })}
 			class=" w-full bg-blue-400 p-1 text-left"
 		>
 			<span>{node.name}</span>
