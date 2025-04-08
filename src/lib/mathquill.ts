@@ -1,48 +1,58 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { SvelteNodeViewRenderer } from 'svelte-tiptap';
+import type { MathQuillStatic } from '$lib/mathquill-desmos/mathquill';
+import type MathQuillMathField from '$lib/mathquill-desmos/mathquill';
+
 import { nodeInputRule } from '@tiptap/core';
 
-import { Selection } from '@tiptap/pm/state';
+declare const MathQuill: MathQuillStatic; // Use declare, but don't import
 
-import MathquillComponent from './MathquillComponent.svelte';
-
-/**
- * Matches a dollar sign followed by a space.
- */
 export const backtickInputRegex = /\$ /;
 
-export const Mathquill = Node.create({
-	name: 'mathquill',
-	group: 'inline', // inline node
-	inline: true,
-	defining: true,
+export interface MathInlineOptions {
+	HTMLAttributes: {
+		[key: string]: any;
+	};
+}
 
-	addOptions() {
-		return {
-			HTMLAttributes: {}
+declare module '@tiptap/core' {
+	interface Commands<ReturnType> {
+		mathInline: {
+			setMathInline: () => ReturnType;
+			toggleMathInline: () => ReturnType;
+			unsetMathInline: () => ReturnType;
 		};
-	},
+	}
+}
+
+export const MathInline = Node.create<MathInlineOptions>({
+	name: 'mathInline',
+
+	inline: true,
+
+	group: 'inline',
+
+	selectable: true,
+
+	atom: true,
 
 	addAttributes() {
 		return {
-			count: {
-				default: 0
+			content: {
+				default: ''
 			}
 		};
 	},
 
 	parseHTML() {
-		// Use a span with a distinguishing class
-		return [{ tag: 'span.mathquill-inline' }];
+		return [
+			{
+				tag: 'math-inline'
+			}
+		];
 	},
 
 	renderHTML({ HTMLAttributes }) {
-		return ['span', mergeAttributes(HTMLAttributes, { class: 'mathquill-inline' })];
-	},
-
-	addNodeView() {
-		// Your Svelte component should now provide a contentDOM element.
-		return SvelteNodeViewRenderer(MathquillComponent);
+		return ['math-inline', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
 	},
 
 	addInputRules() {
@@ -57,21 +67,95 @@ export const Mathquill = Node.create({
 		];
 	},
 
-	addKeyboardShortcuts() {
+	addCommands() {
 		return {
-			Enter: ({ editor }) => {
-				const { state } = editor;
-				const { selection } = state;
-				const { $from, empty } = selection;
-
-				console.log($from.parent.type);
-				if (!empty || $from.parent.type !== this.type) {
-					console.log('Not empty or not mathquill');
-					return false;
+			setMathInline:
+				() =>
+				({ commands }) => {
+					return commands.insertContent({ type: this.name });
+				},
+			toggleMathInline:
+				() =>
+				({ commands }) => {
+					return commands.toggleNode(this.name, this.name);
+				},
+			unsetMathInline:
+				() =>
+				({ commands }) => {
+					return commands.deleteNode(this.name);
 				}
-				console.log('Enter pressed');
-				return true;
-			}
+		};
+	},
+
+	addNodeView() {
+		return (props) => {
+			const dom = document.createElement('math-inline');
+			const MQ = MathQuill.getInterface(3); // Get the MathQuill interface
+
+			let mathField: typeof MathQuillMathField; // store the field instance
+
+			const updateContent = () => {
+				const content = props.node.attrs.content || '';
+				// If the mathField already exists, update its latex without recreating it.
+				if (mathField) {
+					// Only update if the current content differs.
+					if (mathField.latex() !== content) {
+						mathField.latex(content);
+					}
+				} else {
+					// Initial render: set the container HTML if content provided
+					if (content) {
+						dom.innerHTML = content;
+					}
+					// Create the MathField once and assign to mathField.
+					mathField = MQ.MathField(dom, {
+						spaceBehavesLikeTab: true,
+						autoCommands: 'pi theta sqrt sum choose int',
+						handlers: {
+							edit: () => {
+								const pos = props.getPos();
+								if (pos === undefined) {
+									return;
+								}
+								// Read latest latex value
+								const newContent = mathField.latex();
+								props.view.dispatch(
+									props.view.state.tr.setNodeMarkup(pos, undefined, {
+										...props.node.attrs,
+										content: newContent
+									})
+								);
+							}
+						}
+					});
+				}
+			};
+
+			updateContent(); // initial render
+
+			return {
+				dom,
+				update: (updatedNode) => {
+					if (updatedNode.type.name !== this.name) {
+						return false;
+					}
+					props.node = updatedNode;
+					updateContent();
+					return true;
+				},
+				selectNode: () => {
+					dom.classList.add('ProseMirror-selectednode');
+				},
+				deselectNode: () => {
+					dom.classList.remove('ProseMirror-selectednode');
+				},
+				stopEvent: () => {
+					return true;
+				},
+				ignoreMutation: () => {
+					return true;
+				}
+			};
 		};
 	}
 });

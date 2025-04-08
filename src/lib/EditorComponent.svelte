@@ -21,7 +21,7 @@
 
 	import TextAlign from '@tiptap/extension-text-align';
 
-	import { Mathquill } from '$lib/mathquill';
+	import { MathInline } from '$lib/mathquill';
 
 	import { common, createLowlight } from 'lowlight';
 
@@ -75,9 +75,9 @@
 				}),
 				OrderedList,
 				ListItem,
-				Mathquill.configure({
+				MathInline.configure({
 					HTMLAttributes: {
-						class: 'bg-blue-800'
+						class: 'bg-blue-800 p-2'
 					}
 				})
 			],

@@ -1,5 +1,6 @@
 export interface MathQuillStatic {
 	getInterface(version: number): MathQuillInterface;
+	latex(latex: string | null = null): string;
 }
 
 interface MathQuillInterface {
@@ -14,8 +15,8 @@ interface MathQuillConfig {
 	};
 }
 
-interface MathQuillMathField {
-	// Add any methods you use from the MathField object here
+interface MathQuillMathField extends MathQuillStatic {
+	// additional methods and properties can be added here
 }
 
 declare var MathQuill: MathQuillStatic;
