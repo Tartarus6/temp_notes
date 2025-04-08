@@ -21,6 +21,8 @@
 
 	import TextAlign from '@tiptap/extension-text-align';
 
+	import { Mathquill } from '$lib/mathquill';
+
 	import { common, createLowlight } from 'lowlight';
 
 	import 'highlight.js/styles/github-dark.css';
@@ -70,7 +72,12 @@
 					itemTypeName: 'listItem'
 				}),
 				OrderedList,
-				ListItem
+				ListItem,
+				Mathquill.configure({
+					HTMLAttributes: {
+						class: 'bg-blue-800'
+					}
+				})
 			],
 			content: '<p>Hello World!</p>', // Initial content
 			onTransaction: () => {
