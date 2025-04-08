@@ -63,9 +63,11 @@
 				}),
 				CodeBlockLowlight.configure({
 					lowlight,
+					exitOnTripleEnter: false,
+					exitOnArrowDown: false,
 
 					HTMLAttributes: {
-						class: 'p-2 bg-[#212325] rounded-md'
+						class: 'p-2 bg-slate-950 rounded-md'
 					}
 				}),
 				BulletList.configure({
@@ -102,7 +104,7 @@
 		<div class="w-fit place-self-center">
 			{#if editorState.editor}
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor &&
 						editorState.editor.chain().focus().toggleHeading({ level: 1 }).run()}
 					class:active={editorState.editor.isActive('heading', { level: 1 })}
@@ -110,7 +112,7 @@
 					H1
 				</button>
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor &&
 						editorState.editor.chain().focus().toggleHeading({ level: 2 }).run()}
 					class:active={editorState.editor.isActive('heading', { level: 2 })}
@@ -118,7 +120,7 @@
 					H2
 				</button>
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setParagraph().run()}
 					class:active={editorState.editor.isActive('paragraph')}
 				>
@@ -126,28 +128,28 @@
 				</button>
 
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('left').run()}
 					class:active={editorState.editor.isActive({ textAlign: 'left' })}
 				>
 					Left
 				</button>
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('center').run()}
 					class:active={editorState.editor.isActive({ textAlign: 'center' })}
 				>
 					Center
 				</button>
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('right').run()}
 					class:active={editorState.editor.isActive({ textAlign: 'right' })}
 				>
 					Right
 				</button>
 				<button
-					onclick={() =>
+					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('justify').run()}
 					class:active={editorState.editor.isActive({ textAlign: 'justify' })}
 				>
@@ -157,9 +159,7 @@
 		</div>
 	</div>
 
-	<div
-		class="container mx-auto rounded-md border-1 border-red-400 bg-[#121212] focus-within:border-green-400"
-	>
+	<div class="mx-4 rounded-md border-1 border-red-400 bg-slate-800 focus-within:border-green-400">
 		<div bind:this={editorElement}></div>
 	</div>
 </div>
