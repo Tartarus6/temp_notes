@@ -26,6 +26,21 @@
 
 	import 'highlight.js/styles/github-dark.css';
 
+	// extends CodeBlockLowlight to add tab behaviour
+	export const CoderBlockLowlight = CodeBlockLowlight.extend({
+		addKeyboardShortcuts() {
+			return {
+				Tab: () => {
+					if (this.editor.isActive('codeBlock')) {
+						this.editor.commands.insertContent('\t');
+						return true;
+					}
+					return false;
+				}
+			};
+		}
+	});
+
 	const lowlight = createLowlight(common);
 
 	let editorElement: HTMLDivElement;
@@ -60,7 +75,7 @@
 					defaultAlignment: 'left',
 					types: ['heading', 'paragraph'] // Define which node types can be aligned
 				}),
-				CodeBlockLowlight.configure({
+				CoderBlockLowlight.configure({
 					lowlight,
 					exitOnTripleEnter: false,
 					exitOnArrowDown: false,
