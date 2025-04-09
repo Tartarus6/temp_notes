@@ -43,7 +43,6 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 }
 
 export async function openNote(input: { name: string; path: string }) {
-	console.log('opening note');
 	saveNote().then(async () => {
 		const note = await getNote({ path: input.path, name: input.name });
 		if (editorState.editor && note) {
@@ -56,7 +55,6 @@ export async function openNote(input: { name: string; path: string }) {
 }
 
 export async function saveNote() {
-	console.log('saving note', editorState);
 	if (editorState.editor && editorState.note && editorState.note.path) {
 		const note = await updateNote({
 			path: editorState.note.path,
