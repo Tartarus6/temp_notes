@@ -26,13 +26,9 @@ declare module '@tiptap/core' {
 
 export const MathInline = Node.create<MathInlineOptions>({
 	name: 'mathInline',
-
 	inline: true,
-
 	group: 'inline',
-
-	selectable: true,
-
+	selectable: false,
 	atom: true,
 
 	addAttributes() {
@@ -90,6 +86,13 @@ export const MathInline = Node.create<MathInlineOptions>({
 	addNodeView() {
 		return (props) => {
 			const dom = document.createElement('math-inline');
+
+			// Set the HTMLAttributes from the extension options onto the dom element.
+			const { HTMLAttributes } = this.options;
+			for (const [attr, value] of Object.entries(HTMLAttributes)) {
+				dom.setAttribute(attr, value);
+			}
+
 			const MQ = MathQuill.getInterface(3); // Get the MathQuill interface
 
 			let mathField: typeof MathQuillMathField; // store the field instance
@@ -98,16 +101,13 @@ export const MathInline = Node.create<MathInlineOptions>({
 				const content = props.node.attrs.content || '';
 				// If the mathField already exists, update its latex without recreating it.
 				if (mathField) {
-					// Only update if the current content differs.
 					if (mathField.latex() !== content) {
 						mathField.latex(content);
 					}
 				} else {
-					// Initial render: set the container HTML if content provided
 					if (content) {
 						dom.innerHTML = content;
 					}
-					// Create the MathField once and assign to mathField.
 					mathField = MQ.MathField(dom, {
 						spaceBehavesLikeTab: true,
 						autoCommands: 'pi theta sqrt sum choose int',
@@ -117,7 +117,6 @@ export const MathInline = Node.create<MathInlineOptions>({
 								if (pos === undefined) {
 									return;
 								}
-								// Read latest latex value
 								const newContent = mathField.latex();
 								props.view.dispatch(
 									props.view.state.tr.setNodeMarkup(pos, undefined, {
@@ -149,12 +148,8 @@ export const MathInline = Node.create<MathInlineOptions>({
 				deselectNode: () => {
 					dom.classList.remove('ProseMirror-selectednode');
 				},
-				stopEvent: () => {
-					return true;
-				},
-				ignoreMutation: () => {
-					return true;
-				}
+				stopEvent: () => true,
+				ignoreMutation: () => true
 			};
 		};
 	}

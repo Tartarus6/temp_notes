@@ -18,7 +18,6 @@
 	import Italic from '@tiptap/extension-italic';
 
 	import HorizontalRule from '@tiptap/extension-horizontal-rule';
-
 	import TextAlign from '@tiptap/extension-text-align';
 
 	import { MathInline } from '$lib/mathquill';
@@ -77,7 +76,7 @@
 				ListItem,
 				MathInline.configure({
 					HTMLAttributes: {
-						class: 'bg-blue-800 p-2'
+						class: 'p-1 border-slate-500 border-[0.05em]'
 					}
 				})
 			],

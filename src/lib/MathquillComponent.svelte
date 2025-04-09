@@ -7,12 +7,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import type { NodeViewProps } from '@tiptap/core';
-	import cx from 'clsx';
-	import { NodeViewWrapper } from 'svelte-tiptap';
-
-	let { node, updateAttributes }: NodeViewProps = $props();
-
 	let mathFieldSpan: HTMLSpanElement;
 
 	onMount(async () => {
@@ -30,6 +24,4 @@
 	});
 </script>
 
-<NodeViewWrapper class="inline-block">
-	<span bind:this={mathFieldSpan}></span>
-</NodeViewWrapper>
+<span bind:this={mathFieldSpan}></span>
