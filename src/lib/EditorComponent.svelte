@@ -77,7 +77,10 @@
 				MathInline.configure({
 					HTMLAttributes: {
 						class: 'p-1 border-slate-500 border-[0.05em]'
-					}
+					},
+
+					spaceBehavesLikeTab: true,
+					autoCommands: 'pi theta sqrt sum choose int'
 				})
 			],
 			content: '<p>Hello World!</p>', // Initial content

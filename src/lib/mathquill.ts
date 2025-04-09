@@ -12,6 +12,8 @@ export interface MathInlineOptions {
 	HTMLAttributes: {
 		[key: string]: any;
 	};
+	spaceBehavesLikeTab: boolean;
+	autoCommands: string;
 }
 
 declare module '@tiptap/core' {
@@ -109,8 +111,8 @@ export const MathInline = Node.create<MathInlineOptions>({
 						dom.innerHTML = content;
 					}
 					mathField = MQ.MathField(dom, {
-						spaceBehavesLikeTab: true,
-						autoCommands: 'pi theta sqrt sum choose int',
+						spaceBehavesLikeTab: this.options.spaceBehavesLikeTab,
+						autoCommands: this.options.autoCommands,
 						handlers: {
 							edit: () => {
 								const pos = props.getPos();
