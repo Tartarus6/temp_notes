@@ -48,6 +48,8 @@ export async function openNote(input: { name: string; path: string }) {
 		if (editorState.editor && note) {
 			editorState.editor.commands.setContent(note.content);
 			editorState.note = note;
+			// Save the currently open note in local storage
+			localStorage.setItem('current-note', JSON.stringify({ name: note.name, path: note.path }));
 		}
 	});
 }

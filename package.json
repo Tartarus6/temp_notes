@@ -70,6 +70,7 @@
 		"lowlight": "^3.3.0",
 		"mongoose": "^8.10.1",
 		"nodemon": "^3.1.9",
+		"svelte-tiptap": "^2.1.0",
 		"uuid": "^11.1.0"
 	}
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
-	import { onDestroy, onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
 	import { editorState } from '$lib/editorStore.svelte';
@@ -18,16 +18,41 @@
 	import Italic from '@tiptap/extension-italic';
 
 	import HorizontalRule from '@tiptap/extension-horizontal-rule';
-
 	import TextAlign from '@tiptap/extension-text-align';
+
+	import { MathInline } from '$lib/mathquill';
 
 	import { common, createLowlight } from 'lowlight';
 
 	import 'highlight.js/styles/github-dark.css';
 
+	// extends CodeBlockLowlight to add tab behaviour
+	export const CoderBlockLowlight = CodeBlockLowlight.extend({
+		addKeyboardShortcuts() {
+			return {
+				Tab: () => {
+					if (this.editor.isActive('codeBlock')) {
+						this.editor.commands.insertContent('\t');
+						return true;
+					}
+					return false;
+				}
+			};
+		}
+	});
+
 	const lowlight = createLowlight(common);
 
 	let editorElement: HTMLDivElement;
+	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'ArrowLeft') {
+			lastArrowKeyDirection = 'left';
+		} else if (event.key === 'ArrowRight') {
+			lastArrowKeyDirection = 'right';
+		}
+	}
 
 	onMount(() => {
 		// Check local storage for a previously saved note, open that note if it exists
@@ -59,7 +84,7 @@
 					defaultAlignment: 'left',
 					types: ['heading', 'paragraph'] // Define which node types can be aligned
 				}),
-				CodeBlockLowlight.configure({
+				CoderBlockLowlight.configure({
 					lowlight,
 					exitOnTripleEnter: false,
 					exitOnArrowDown: false,
@@ -72,7 +97,16 @@
 					itemTypeName: 'listItem'
 				}),
 				OrderedList,
-				ListItem
+				ListItem,
+				MathInline.configure({
+					HTMLAttributes: {
+						class: 'p-1 border-slate-500 border-[0.05em]'
+					},
+
+					spaceBehavesLikeTab: true,
+					autoCommands: 'pi theta sqrt sum choose int',
+					getNavigationDirection: () => lastArrowKeyDirection
+				})
 			],
 			content: '<p>Hello World!</p>', // Initial content
 			onTransaction: () => {
@@ -81,10 +115,14 @@
 			}
 		});
 
+		// Add keydown listener to the editor's DOM element
+		editorElement.addEventListener('keydown', handleKeyDown);
+
 		editorState.editor = editor;
 
 		return () => {
 			editor.destroy();
+			editorElement.removeEventListener('keydown', handleKeyDown);
 		};
 	});
 </script>

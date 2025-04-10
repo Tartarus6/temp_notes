@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { fetchNotes, updateNote, createNote } from '$lib/client/client';
-	import { editorState } from '$lib/editorStore.svelte';
 	import type { Note } from '$lib/server/server';
 	import { buildFileTree, saveNote, type FileNode } from './utils';
 
