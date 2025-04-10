@@ -155,16 +155,17 @@ export const MathInline = Node.create<MathInlineOptions>({
 				},
 				selectNode: () => {
 					console.log('node selected');
-					const direction = this.options.getNavigationDirection?.() || 'right';
+					// Get direction immediately when the node is selected
+					requestAnimationFrame(() => {
+						const direction = this.options.getNavigationDirection?.() || 'right';
 
-					console.log(`direction: ${direction}`);
-
-					mathField?.focus();
-					if (direction === 'left') {
-						mathField?.moveToRightEnd();
-					} else if (direction === 'right') {
-						mathField?.moveToLeftEnd();
-					}
+						mathField?.focus();
+						if (direction === 'left') {
+							mathField?.moveToRightEnd();
+						} else if (direction === 'right') {
+							mathField?.moveToLeftEnd();
+						}
+					});
 					dom.classList.add('ProseMirror-selectednode');
 				},
 				deselectNode: () => {

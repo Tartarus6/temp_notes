@@ -5,6 +5,16 @@ export interface MathQuillStatic {
 	blur(): void;
 	moveToLeftEnd(): void;
 	moveToRightEnd(): void;
+	__controller: {
+		cursor: MathQuillCursor;
+	};
+}
+
+interface MathQuillCursor {
+	'-1': Element | number;
+	'1': Element | number;
+	cursorElement: Element;
+	parent: MathQuillCursor;
 }
 
 interface MathQuillInterface {
