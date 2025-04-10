@@ -116,7 +116,6 @@ export const MathInline = Node.create<MathInlineOptions>({
 						autoCommands: this.options.autoCommands,
 						handlers: {
 							edit: () => {
-								/*
 								const pos = props.getPos();
 								if (pos === undefined) {
 									return;
@@ -128,7 +127,6 @@ export const MathInline = Node.create<MathInlineOptions>({
 										content: newContent
 									})
 								);
-								*/
 							}
 						}
 					});
