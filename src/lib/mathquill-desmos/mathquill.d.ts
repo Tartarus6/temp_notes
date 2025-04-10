@@ -1,6 +1,10 @@
 export interface MathQuillStatic {
 	getInterface(version: number): MathQuillInterface;
 	latex(latex: string | null = null): string;
+	focus(): void;
+	blur(): void;
+	moveToLeftEnd(): void;
+	moveToRightEnd(): void;
 }
 
 interface MathQuillInterface {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
-	import { onDestroy, onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
 	import { editorState } from '$lib/editorStore.svelte';
@@ -44,6 +44,15 @@
 	const lowlight = createLowlight(common);
 
 	let editorElement: HTMLDivElement;
+	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'ArrowLeft') {
+			lastArrowKeyDirection = 'left';
+		} else if (event.key === 'ArrowRight') {
+			lastArrowKeyDirection = 'right';
+		}
+	}
 
 	onMount(() => {
 		// Check local storage for a previously saved note, open that note if it exists
@@ -95,7 +104,8 @@
 					},
 
 					spaceBehavesLikeTab: true,
-					autoCommands: 'pi theta sqrt sum choose int'
+					autoCommands: 'pi theta sqrt sum choose int',
+					getNavigationDirection: () => lastArrowKeyDirection
 				})
 			],
 			content: '<p>Hello World!</p>', // Initial content
@@ -105,10 +115,14 @@
 			}
 		});
 
+		// Add keydown listener to the editor's DOM element
+		editorElement.addEventListener('keydown', handleKeyDown);
+
 		editorState.editor = editor;
 
 		return () => {
 			editor.destroy();
+			editorElement.removeEventListener('keydown', handleKeyDown);
 		};
 	});
 </script>

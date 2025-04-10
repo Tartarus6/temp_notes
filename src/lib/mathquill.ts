@@ -14,6 +14,7 @@ export interface MathInlineOptions {
 	};
 	spaceBehavesLikeTab: boolean;
 	autoCommands: string;
+	getNavigationDirection: () => 'left' | 'right';
 }
 
 declare module '@tiptap/core' {
@@ -30,7 +31,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 	name: 'mathInline',
 	inline: true,
 	group: 'inline',
-	selectable: false,
+	selectable: true,
 	atom: true,
 
 	addAttributes() {
@@ -115,6 +116,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 						autoCommands: this.options.autoCommands,
 						handlers: {
 							edit: () => {
+								/*
 								const pos = props.getPos();
 								if (pos === undefined) {
 									return;
@@ -126,6 +128,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 										content: newContent
 									})
 								);
+								*/
 							}
 						}
 					});
@@ -133,6 +136,14 @@ export const MathInline = Node.create<MathInlineOptions>({
 			};
 
 			updateContent(); // initial render
+
+			dom.addEventListener('keydown', (event) => {
+				if (event.key === 'ArrowRight') {
+					console.log('right pressed');
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			});
 
 			return {
 				dom,
@@ -145,12 +156,37 @@ export const MathInline = Node.create<MathInlineOptions>({
 					return true;
 				},
 				selectNode: () => {
+					console.log('node selected');
+					const direction = this.options.getNavigationDirection?.() || 'right';
+
+					console.log(`direction: ${direction}`);
+
+					mathField?.focus();
+					if (direction === 'left') {
+						mathField?.moveToRightEnd();
+					} else if (direction === 'right') {
+						mathField?.moveToLeftEnd();
+					}
 					dom.classList.add('ProseMirror-selectednode');
 				},
 				deselectNode: () => {
+					console.log('node deselected');
 					dom.classList.remove('ProseMirror-selectednode');
 				},
-				stopEvent: () => true,
+				stopEvent: (event) => {
+					// Allow arrow keys to bubble out so that the ProseMirror selection can update.
+					if (event instanceof KeyboardEvent) {
+						if (
+							event.key === 'ArrowLeft' ||
+							event.key === 'ArrowRight' ||
+							event.key === 'ArrowUp' ||
+							event.key === 'ArrowDown'
+						) {
+							return false;
+						}
+					}
+					return true;
+				},
 				ignoreMutation: () => true
 			};
 		};
