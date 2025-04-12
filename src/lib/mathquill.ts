@@ -4,9 +4,11 @@ import type MathQuillMathField from '$lib/mathquill-desmos/mathquill';
 
 import { nodeInputRule } from '@tiptap/core';
 
+import type { NodeViewRendererProps } from '@tiptap/core';
+
 declare const MathQuill: MathQuillStatic; // Use declare, but don't import
 
-export const backtickInputRegex = /\$ /;
+export const inputRegex = /\$ /;
 
 export interface MathInlineOptions {
 	HTMLAttributes: {
@@ -57,7 +59,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 	addInputRules() {
 		return [
 			nodeInputRule({
-				find: backtickInputRegex,
+				find: inputRegex,
 				type: this.type,
 				getAttributes: (match) => ({
 					language: match[1]
@@ -108,6 +110,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 						mathField.latex(content);
 					}
 				} else {
+					// if the content already exists, just load it
 					if (content) {
 						dom.innerHTML = content;
 					}
@@ -120,6 +123,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 								if (pos === undefined) {
 									return;
 								}
+								// allowing for the math content to be saved
 								const newContent = mathField.latex();
 								props.view.dispatch(
 									props.view.state.tr.setNodeMarkup(pos, undefined, {
@@ -135,13 +139,32 @@ export const MathInline = Node.create<MathInlineOptions>({
 
 			updateContent(); // initial render
 
-			dom.addEventListener('keydown', (event) => {
-				if (event.key === 'ArrowRight') {
-					console.log('right pressed');
-					event.preventDefault();
-					event.stopPropagation();
-				}
-			});
+			// Add event listener in capture phase to intercept before MathQuill
+			dom.addEventListener(
+				'keydown',
+				(event) => {
+					if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+						const cursor = mathField.__controller.cursor;
+
+						// preventing escaping if inside of something like a fraction rather than the root
+						const inRoot = cursor.parent._el?.classList.contains('mq-root-block');
+						if (!inRoot) return;
+
+						// cursor[1] is 0 if no elements to the right of the cursor
+						// cursor[-1] is 0 if no elements to the left of the cursor
+						if (event.key === 'ArrowRight' && cursor[1] === 0) {
+							event.preventDefault();
+							event.stopPropagation();
+							props.editor.commands.focus(props.getPos() + 1);
+						} else if (event.key === 'ArrowLeft' && cursor[-1] === 0) {
+							event.preventDefault();
+							event.stopPropagation();
+							props.editor.commands.focus(props.getPos());
+						}
+					}
+				},
+				true // true enables capture phase, so event runs before cursor moves
+			);
 
 			return {
 				dom,
@@ -154,7 +177,6 @@ export const MathInline = Node.create<MathInlineOptions>({
 					return true;
 				},
 				selectNode: () => {
-					console.log('node selected');
 					// Get direction immediately when the node is selected
 					requestAnimationFrame(() => {
 						const direction = this.options.getNavigationDirection?.() || 'right';
@@ -169,21 +191,9 @@ export const MathInline = Node.create<MathInlineOptions>({
 					dom.classList.add('ProseMirror-selectednode');
 				},
 				deselectNode: () => {
-					console.log('node deselected');
 					dom.classList.remove('ProseMirror-selectednode');
 				},
 				stopEvent: (event) => {
-					// Allow arrow keys to bubble out so that the ProseMirror selection can update.
-					if (event instanceof KeyboardEvent) {
-						if (
-							event.key === 'ArrowLeft' ||
-							event.key === 'ArrowRight' ||
-							event.key === 'ArrowUp' ||
-							event.key === 'ArrowDown'
-						) {
-							return false;
-						}
-					}
 					return true;
 				},
 				ignoreMutation: () => true

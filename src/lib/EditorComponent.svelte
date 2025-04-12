@@ -100,7 +100,7 @@
 				ListItem,
 				MathInline.configure({
 					HTMLAttributes: {
-						class: 'p-1 border-slate-500 border-[0.05em]'
+						class: 'p-1 border-slate-500 border-[0.05em] rounded-sm'
 					},
 
 					spaceBehavesLikeTab: true,

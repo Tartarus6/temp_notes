@@ -13,7 +13,8 @@ export interface MathQuillStatic {
 interface MathQuillCursor {
 	'-1': Element | number;
 	'1': Element | number;
-	cursorElement: Element;
+	cursorElement: Element | null;
+	_el: Element | null;
 	parent: MathQuillCursor;
 }
 
