@@ -12,6 +12,8 @@
 	import BulletList from '@tiptap/extension-bullet-list';
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem from '@tiptap/extension-list-item';
+	import TaskList from '@tiptap/extension-task-list';
+	import TaskItem from '@tiptap/extension-task-item';
 
 	import Bold from '@tiptap/extension-bold';
 	import Code from '@tiptap/extension-code';
@@ -94,10 +96,18 @@
 					}
 				}),
 				BulletList.configure({
-					itemTypeName: 'listItem'
+					itemTypeName: 'listItem',
+
+					HTMLAttributes: {
+						class: 'bullet-list'
+					}
 				}),
 				OrderedList,
 				ListItem,
+				TaskList,
+				TaskItem.configure({
+					nested: true
+				}),
 				MathInline.configure({
 					HTMLAttributes: {
 						class: 'p-1 border-slate-500 border-[0.05em] rounded-sm'
