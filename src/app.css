@@ -66,6 +66,28 @@ li {
 }
 
 ::marker {
-	right: 0;
 	color: gray;
+}
+
+ul[data-type='taskList'] label {
+	/* This is the label for the task list */
+	/* TODO: the spacing is currently incorrect */
+}
+
+ul[data-type='taskList'] {
+	list-style: none;
+	padding: 0;
+
+	li {
+		align-items: flex-start;
+		display: flex;
+	}
+
+	input[type='checkbox'] {
+		cursor: pointer;
+	}
+
+	ul[data-type='taskList'] {
+		margin: 0;
+	}
 }
