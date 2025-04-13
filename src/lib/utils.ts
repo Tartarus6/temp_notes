@@ -14,8 +14,9 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 	const root: FileNode = { name: 'root', path: '', type: 'directory', children: [] };
 	const pathMap: { [path: string]: FileNode } = { '/': root };
 
+	// First pass: create all nodes
 	for (const note of notes) {
-		const parts = (note.path + note.name).split('/').filter(Boolean); // Split the path into segments
+		const parts = (note.path + note.name).split('/').filter(Boolean);
 		let currentPath = '/';
 		let parent = root;
 
@@ -27,9 +28,9 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 				const newNode: FileNode = {
 					name: part,
 					path: currentPath,
-					type: i === parts.length - 1 ? 'file' : 'directory', // Last part is a file
+					type: i === parts.length - 1 ? 'file' : 'directory',
 					children: [],
-					note: i === parts.length - 1 ? note : undefined // Assign note to file
+					note: i === parts.length - 1 ? note : undefined
 				};
 				pathMap[fullPath] = newNode;
 				parent.children = parent.children || [];
@@ -39,6 +40,23 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 			currentPath = fullPath + '/';
 		}
 	}
+
+	// Second pass: sort children arrays
+	const sortNodes = (node: FileNode) => {
+		if (node.children) {
+			// Sort children: directories first, then by name
+			node.children.sort((a, b) => {
+				if (a.type === b.type) {
+					return a.name.localeCompare(b.name);
+				}
+				return a.type === 'directory' ? -1 : 1;
+			});
+			// Recursively sort children's children
+			node.children.forEach(sortNodes);
+		}
+	};
+
+	sortNodes(root);
 	return root.children || [];
 }
 
