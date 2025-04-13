@@ -110,7 +110,7 @@
 				}),
 				MathInline.configure({
 					HTMLAttributes: {
-						class: 'p-1 border-slate-500 border-[0.05em] rounded-sm'
+						class: 'p-1 border-slate-700 border-[0.1em] rounded-sm'
 					},
 
 					spaceBehavesLikeTab: true,

@@ -4,8 +4,6 @@ import type MathQuillMathField from '$lib/mathquill-desmos/mathquill';
 
 import { nodeInputRule } from '@tiptap/core';
 
-import type { NodeViewRendererProps } from '@tiptap/core';
-
 declare const MathQuill: MathQuillStatic; // Use declare, but don't import
 
 export const inputRegex = /\$ /;
@@ -104,6 +102,8 @@ export const MathInline = Node.create<MathInlineOptions>({
 
 			const updateContent = () => {
 				const content = props.node.attrs.content || '';
+				let newNode = false;
+
 				// If the mathField already exists, update its latex without recreating it.
 				if (mathField) {
 					if (mathField.latex() !== content) {
@@ -113,6 +113,8 @@ export const MathInline = Node.create<MathInlineOptions>({
 					// if the content already exists, just load it
 					if (content) {
 						dom.innerHTML = content;
+					} else {
+						newNode = true;
 					}
 					mathField = MQ.MathField(dom, {
 						spaceBehavesLikeTab: this.options.spaceBehavesLikeTab,
@@ -125,6 +127,15 @@ export const MathInline = Node.create<MathInlineOptions>({
 								}
 								// allowing for the math content to be saved
 								const newContent = mathField.latex();
+
+								// Delete the node if it's empty
+								if (newContent === '') {
+									props.view.dispatch(props.view.state.tr.delete(pos, pos + 1));
+									props.editor.commands.focus(pos);
+									return;
+								}
+
+								// Update the content if not empty
 								props.view.dispatch(
 									props.view.state.tr.setNodeMarkup(pos, undefined, {
 										...props.node.attrs,
@@ -134,6 +145,15 @@ export const MathInline = Node.create<MathInlineOptions>({
 							}
 						}
 					});
+
+					// Focus the mathField after creation
+					if (newNode) {
+						requestAnimationFrame(() => {
+							props.editor.commands.setNodeSelection(props.getPos());
+							mathField?.focus();
+							mathField?.moveToLeftEnd();
+						});
+					}
 				}
 			};
 
@@ -174,6 +194,7 @@ export const MathInline = Node.create<MathInlineOptions>({
 					}
 					props.node = updatedNode;
 					updateContent();
+
 					return true;
 				},
 				selectNode: () => {
@@ -192,6 +213,18 @@ export const MathInline = Node.create<MathInlineOptions>({
 				},
 				deselectNode: () => {
 					dom.classList.remove('ProseMirror-selectednode');
+					requestAnimationFrame(() => {
+						// delete node if empty
+						console.log(mathField.latex());
+						if (mathField && mathField.latex() === '') {
+							const pos = props.getPos();
+							if (pos === undefined) {
+								return;
+							}
+							props.view.dispatch(props.view.state.tr.delete(pos, pos + 1));
+							props.editor.commands.focus(pos);
+						}
+					});
 				},
 				stopEvent: (event) => {
 					return true;
