@@ -141,7 +141,7 @@
 					getNavigationDirection: () => lastArrowKeyDirection
 				})
 			],
-			content: '<p>Hello World!</p>', // Initial content
+			content: editorState.note?.content || '<p>Hello World!</p>', // Use existing content if available
 			onUpdate: ({ editor }) => {
 				// Trigger save when content changes
 				saveLive();
