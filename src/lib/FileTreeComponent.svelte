@@ -20,9 +20,7 @@
 	updateTree();
 
 	async function newNote(input: { name: string; path: string }) {
-		console.log('new note input: ', input);
 		const note = await createNote({ path: input.path, name: input.name });
-		console.log('new note: ', await note);
 		if (note) {
 			updateTree();
 		}
