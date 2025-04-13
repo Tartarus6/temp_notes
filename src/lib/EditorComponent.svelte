@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
-	import { onDestroy, onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
 	import { editorState } from '$lib/editorStore.svelte';
@@ -12,22 +12,49 @@
 	import BulletList from '@tiptap/extension-bullet-list';
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem from '@tiptap/extension-list-item';
+	import TaskList from '@tiptap/extension-task-list';
+	import TaskItem from '@tiptap/extension-task-item';
 
 	import Bold from '@tiptap/extension-bold';
 	import Code from '@tiptap/extension-code';
 	import Italic from '@tiptap/extension-italic';
 
 	import HorizontalRule from '@tiptap/extension-horizontal-rule';
-
 	import TextAlign from '@tiptap/extension-text-align';
+
+	import { MathInline } from '$lib/mathquill';
 
 	import { common, createLowlight } from 'lowlight';
 
 	import 'highlight.js/styles/github-dark.css';
 
+	// extends CodeBlockLowlight to add tab behaviour
+	export const CoderBlockLowlight = CodeBlockLowlight.extend({
+		addKeyboardShortcuts() {
+			return {
+				Tab: () => {
+					if (this.editor.isActive('codeBlock')) {
+						this.editor.commands.insertContent('\t');
+						return true;
+					}
+					return false;
+				}
+			};
+		}
+	});
+
 	const lowlight = createLowlight(common);
 
 	let editorElement: HTMLDivElement;
+	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'ArrowLeft') {
+			lastArrowKeyDirection = 'left';
+		} else if (event.key === 'ArrowRight') {
+			lastArrowKeyDirection = 'right';
+		}
+	}
 
 	onMount(() => {
 		// Check local storage for a previously saved note, open that note if it exists
@@ -59,7 +86,7 @@
 					defaultAlignment: 'left',
 					types: ['heading', 'paragraph'] // Define which node types can be aligned
 				}),
-				CodeBlockLowlight.configure({
+				CoderBlockLowlight.configure({
 					lowlight,
 					exitOnTripleEnter: false,
 					exitOnArrowDown: false,
@@ -69,10 +96,27 @@
 					}
 				}),
 				BulletList.configure({
-					itemTypeName: 'listItem'
+					itemTypeName: 'listItem',
+
+					HTMLAttributes: {
+						class: 'bullet-list'
+					}
 				}),
 				OrderedList,
-				ListItem
+				ListItem,
+				TaskList,
+				TaskItem.configure({
+					nested: true
+				}),
+				MathInline.configure({
+					HTMLAttributes: {
+						class: 'p-1 border-slate-700 border-[0.1em] rounded-sm'
+					},
+
+					spaceBehavesLikeTab: true,
+					autoCommands: 'pi theta sqrt sum choose int',
+					getNavigationDirection: () => lastArrowKeyDirection
+				})
 			],
 			content: '<p>Hello World!</p>', // Initial content
 			onTransaction: () => {
@@ -81,10 +125,14 @@
 			}
 		});
 
+		// Add keydown listener to the editor's DOM element
+		editorElement.addEventListener('keydown', handleKeyDown);
+
 		editorState.editor = editor;
 
 		return () => {
 			editor.destroy();
+			editorElement.removeEventListener('keydown', handleKeyDown);
 		};
 	});
 </script>

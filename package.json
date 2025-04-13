@@ -58,6 +58,8 @@
 		"@libsql/client": "^0.14.0",
 		"@tiptap/core": "^2.11.5",
 		"@tiptap/extension-code-block-lowlight": "^2.11.5",
+		"@tiptap/extension-task-item": "^2.11.7",
+		"@tiptap/extension-task-list": "^2.11.7",
 		"@tiptap/starter-kit": "^2.11.5",
 		"better-sqlite3": "^11.8.1",
 		"body-parser": "^1.20.3",
@@ -70,6 +72,7 @@
 		"lowlight": "^3.3.0",
 		"mongoose": "^8.10.1",
 		"nodemon": "^3.1.9",
+		"svelte-tiptap": "^2.1.0",
 		"uuid": "^11.1.0"
 	}
 }
