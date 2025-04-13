@@ -4,6 +4,7 @@
 	import { Editor } from '@tiptap/core';
 
 	import { editorState } from '$lib/editorStore.svelte';
+	import { saveNote } from '$lib/utils';
 
 	import Document from '@tiptap/extension-document';
 	import Paragraph from '@tiptap/extension-paragraph';
@@ -46,8 +47,30 @@
 	const lowlight = createLowlight(common);
 
 	let editorElement: HTMLDivElement;
-	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
 
+	let saveStatus: 'saved' | 'saving' | 'error' = $state('saved');
+	let saveTimeout: NodeJS.Timeout;
+
+	// debounced save function for live note saving
+	async function saveLive() {
+		if (!editorState.editor || !editorState.note) return;
+
+		clearTimeout(saveTimeout);
+		saveStatus = 'saving';
+
+		saveTimeout = setTimeout(async () => {
+			try {
+				await saveNote();
+				saveStatus = 'saved';
+			} catch (err) {
+				saveStatus = 'error';
+				console.error('Failed to save:', err);
+			}
+		}, 1000); // Save after 1 second of no typing
+	}
+
+	// tracking for entering and exiting math mode
+	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'ArrowLeft') {
 			lastArrowKeyDirection = 'left';
@@ -119,6 +142,10 @@
 				})
 			],
 			content: '<p>Hello World!</p>', // Initial content
+			onUpdate: ({ editor }) => {
+				// Trigger save when content changes
+				saveLive();
+			},
 			onTransaction: () => {
 				// force re-render so `editor.isActive` works as expected
 				editorState.editor = editor;
@@ -138,9 +165,68 @@
 </script>
 
 <div class="sticky-container">
-	{#if editorState.note}
-		<span>current note: {editorState.note.path}{editorState.note.name}</span>
-	{/if}
+	<div class="flex items-center justify-between px-2">
+		{#if editorState.note}
+			<span>current note: {editorState.note.path}{editorState.note.name}</span>
+		{:else}
+			<span>No note selected</span>
+		{/if}
+
+		<div class="flex items-center gap-2">
+			{#if saveStatus === 'saving'}
+				<span class="flex items-center gap-1 text-yellow-400">
+					<svg
+						class="h-4 w-4 animate-spin"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
+					</svg>
+					Saving...
+				</span>
+			{:else if saveStatus === 'saved'}
+				<span class="flex items-center gap-1 text-green-400">
+					<svg
+						class="h-4 w-4"
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					All changes saved
+				</span>
+			{:else}
+				<span class="flex items-center gap-1 text-red-400">
+					<svg
+						class="h-4 w-4"
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					Save failed
+				</span>
+			{/if}
+		</div>
+	</div>
+
 	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2">
 		<div class="w-fit place-self-center">
 			{#if editorState.editor}
