@@ -16,14 +16,16 @@
 <div
 	class="relative flex items-center text-sm select-none"
 	style="padding-left: {indent}px"
-	on:mouseenter={() => (isHovered = true)}
-	on:mouseleave={() => (isHovered = false)}
+	onmouseenter={() => (isHovered = true)}
+	onmouseleave={() => (isHovered = false)}
+	role="button"
+	tabindex="0"
 >
 	{#if node.type === 'directory'}
 		<button
 			type="button"
-			on:click={toggleOpen}
-			on:keydown={(e) => e.key === 'Enter' && toggleOpen()}
+			onclick={toggleOpen}
+			onkeydown={(e) => e.key === 'Enter' && toggleOpen()}
 			aria-expanded={open}
 			class="flex w-full items-center py-[2px] hover:bg-[#37373d] {isHovered ? 'bg-[#37373d]' : ''}"
 		>
@@ -54,7 +56,7 @@
 		</button>
 	{:else}
 		<button
-			on:click={() => openNote({ name: node.name, path: node.path })}
+			onmousedown={() => openNote({ name: node.name, path: node.path })}
 			class="flex w-full items-center py-[2px] hover:bg-[#37373d] {isHovered ? 'bg-[#37373d]' : ''}"
 		>
 			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>

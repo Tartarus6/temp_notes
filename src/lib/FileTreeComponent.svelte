@@ -39,14 +39,13 @@
 </script>
 
 <div class="flex h-full w-64 flex-col bg-[#252526] text-[#cccccc]">
-	<div class="p-2 text-xs font-semibold tracking-wide text-[#bbbbbb] uppercase">Explorer</div>
-
 	<div class="flex items-center justify-between px-2 py-1">
 		<span class="text-sm">Notes</span>
 		<button
-			on:click={() => (isCreatingNew = true)}
-			class="rounded p-1 hover:bg-[#2d2d2d]"
+			onmousedown={() => (isCreatingNew = true)}
+			class="rounded bg-slate-700 p-1 hover:bg-slate-600"
 			title="New Note"
+			aria-label="Create a new note"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -67,15 +66,14 @@
 					type="text"
 					bind:value={newNoteName}
 					placeholder="new note name"
-					on:keydown={handleNewNoteKeydown}
+					onkeydown={handleNewNoteKeydown}
 					class="w-full rounded border border-[#007fd4] bg-[#3c3c3c] px-2 py-1 text-sm text-[#cccccc] focus:outline-none"
-					autofocus
 				/>
 				<input
 					type="text"
 					bind:value={newNotePath}
 					placeholder="path (e.g., /folder)"
-					on:keydown={handleNewNoteKeydown}
+					onkeydown={handleNewNoteKeydown}
 					class="mt-1 w-full rounded border border-[#3c3c3c] bg-[#3c3c3c] px-2 py-1 text-sm text-[#cccccc] focus:border-[#007fd4] focus:outline-none"
 				/>
 			</div>
@@ -85,13 +83,6 @@
 			<Node {node} />
 		{/each}
 	</div>
-
-	<button
-		on:click={() => saveNote()}
-		class="m-2 rounded-sm bg-[#007fd4] px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-[#1a8cd8]"
-	>
-		Save Note
-	</button>
 </div>
 
 <style>
