@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { Editor } from '@tiptap/core';
 
-	import { editorState } from '$lib/editorStore.svelte';
+	import { editorState } from '$lib/variables.svelte';
 	import { saveNote } from '$lib/utils';
 
 	import Document from '@tiptap/extension-document';
@@ -227,7 +227,7 @@
 		</div>
 	</div>
 
-	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2">
+	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2 select-none">
 		<div class="w-fit place-self-center">
 			{#if editorState.editor}
 				<button
