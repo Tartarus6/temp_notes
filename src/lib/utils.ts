@@ -1,5 +1,5 @@
 import type { Note } from '$lib/server/server';
-import { editorState } from './editorStore.svelte';
+import { editorState } from './variables.svelte';
 import { getNote, updateNote } from './client/client';
 
 export type FileNode = {
