@@ -1,23 +1,48 @@
 <script lang="ts">
 	import { type FileNode } from './utils';
 	import { openNote } from './utils';
+	import { createNote } from '$lib/client/client';
+	import Node from '$lib/Node.svelte';
+	import { contextMenuState } from './variables.svelte';
+	import { type ContextMenuItem } from './variables.svelte';
 
-	export let node: FileNode;
-	export let indent = 0;
+	interface Props {
+		node: FileNode;
+		indent?: number;
+	}
 
-	let open = false;
-	let isHovered = false;
+	let { node, indent = 0 }: Props = $props();
+
+	let open = $state(false);
+	let isHovered = $state(false);
+
+	let contextMenuItems: ContextMenuItem[] =
+		node.type === 'directory' ? [{ label: 'New File', onClick: handleCreateNewFile }] : [];
 
 	function toggleOpen() {
 		open = !open;
+	}
+
+	function handleContextMenu(e: MouseEvent) {
+		e.preventDefault();
+		contextMenuState.show = true;
+		contextMenuState.x = e.clientX;
+		contextMenuState.y = e.clientY;
+		contextMenuState.items = contextMenuItems;
+	}
+
+	//TODO: implement note creation
+	function handleCreateNewFile() {
+		console.log('creation');
 	}
 </script>
 
 <div
 	class="relative flex items-center text-sm select-none"
-	style="padding-left: {indent}px"
+	style="padding-left: {indent}em"
 	onmouseenter={() => (isHovered = true)}
 	onmouseleave={() => (isHovered = false)}
+	oncontextmenu={handleContextMenu}
 	role="button"
 	tabindex="0"
 >
@@ -80,7 +105,7 @@
 
 {#if open && node.children}
 	{#each node.children as child}
-		<svelte:self node={child} indent={indent + 8} />
+		<Node node={child} indent={indent + 1} />
 	{/each}
 {/if}
 
