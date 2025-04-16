@@ -1,6 +1,6 @@
 import type { Note } from '$lib/server/server';
 import { editorState } from './variables.svelte';
-import { getNote, updateNote } from './client/client';
+import { deleteNote, getNote, updateNote } from './client/client';
 
 export type FileNode = {
 	name: string;
@@ -10,6 +10,7 @@ export type FileNode = {
 	note?: Note; // Optional: Store the note object if it's a file
 };
 
+// builds a file tree from the notes
 export function buildFileTree(notes: Note[]): FileNode[] {
 	const root: FileNode = { name: 'root', path: '', type: 'directory', children: [] };
 	const pathMap: { [path: string]: FileNode } = { '/': root };
@@ -60,18 +61,26 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 	return root.children || [];
 }
 
+// opens a note in the editor and sets the editor state
 export async function openNote(input: { name: string; path: string }) {
+	console.log('Opening note:', input);
 	saveNote().then(async () => {
+		console.log('A');
 		const note = await getNote({ path: input.path, name: input.name });
+		console.log('B');
 		if (editorState.editor && note) {
+			console.log('C');
 			editorState.editor.commands.setContent(note.content);
 			editorState.note = note;
 			// Save the currently open note in local storage
 			localStorage.setItem('current-note', JSON.stringify({ name: note.name, path: note.path }));
+		} else {
+			console.log('oops', editorState.editor, note);
 		}
 	});
 }
 
+// saves the currently open note
 export async function saveNote() {
 	if (editorState.editor && editorState.note && editorState.note.path) {
 		const note = await updateNote({
@@ -80,6 +89,25 @@ export async function saveNote() {
 			content: editorState.editor.getHTML()
 		});
 		return note;
+	}
+	return null;
+}
+
+// deletes note and unsets the editor state if the note is currently open
+export async function removeNote(input: { name: string; path: string }) {
+	deleteNote({ path: input.path, name: input.name });
+
+	// if deleted note is currently open
+	if (
+		editorState.editor &&
+		editorState.note &&
+		editorState.note.path &&
+		editorState.note.name === input.name &&
+		editorState.note.path === input.path
+	) {
+		editorState.note = null;
+		editorState.editor.commands.setContent('');
+		localStorage.removeItem('current-note');
 	}
 	return null;
 }

@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { fetchNotes, updateNote, createNote } from '$lib/client/client';
+	import { fetchNotes, createNote } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, saveNote, type FileNode } from './utils';
+	import { buildFileTree, type FileNode } from './utils';
 	import Node from './Node.svelte';
+	import { fileTreeState } from './variables.svelte';
 
 	let newNoteName = $state('');
 	let newNotePath = $state('/');
@@ -17,7 +18,7 @@
 
 	updateTree();
 
-	async function newNote(input: { name: string; path: string }) {
+	async function handleNewNote(input: { name: string; path: string }) {
 		const note = await createNote({ path: input.path, name: input.name });
 		if (note) {
 			updateTree();
@@ -29,18 +30,26 @@
 
 	function handleNewNoteKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
-			newNote({ path: newNotePath, name: newNoteName });
+			handleNewNote({ path: newNotePath, name: newNoteName });
 		} else if (e.key === 'Escape') {
 			isCreatingNew = false;
 			newNoteName = '';
 			newNotePath = '/';
 		}
 	}
+
+	$effect(() => {
+		if (fileTreeState.isOld) {
+			updateTree();
+			fileTreeState.isOld = false;
+		}
+	});
 </script>
 
-<div class="flex h-full w-64 flex-col bg-[#252526] text-[#cccccc]">
+<div class="flex h-full w-64 flex-col bg-slate-800">
 	<div class="flex items-center justify-between px-2 py-1">
 		<span class="text-sm">Notes</span>
+		<div class="w-full text-right text-sm">temporary -></div>
 		<button
 			onmousedown={() => (isCreatingNew = true)}
 			class="rounded bg-slate-700 p-1 hover:bg-slate-600"
@@ -67,14 +76,14 @@
 					bind:value={newNoteName}
 					placeholder="new note name"
 					onkeydown={handleNewNoteKeydown}
-					class="w-full rounded border border-[#007fd4] bg-[#3c3c3c] px-2 py-1 text-sm text-[#cccccc] focus:outline-none"
+					class="w-full rounded border border-blue-500 bg-slate-500 px-2 py-1 text-sm focus:outline-none"
 				/>
 				<input
 					type="text"
 					bind:value={newNotePath}
 					placeholder="path (e.g., /folder)"
 					onkeydown={handleNewNoteKeydown}
-					class="mt-1 w-full rounded border border-[#3c3c3c] bg-[#3c3c3c] px-2 py-1 text-sm text-[#cccccc] focus:border-[#007fd4] focus:outline-none"
+					class="mt-1 w-full rounded border border-slate-500 bg-slate-500 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
 				/>
 			</div>
 		{/if}
@@ -88,7 +97,7 @@
 <style>
 	:global(*) {
 		scrollbar-width: thin;
-		scrollbar-color: #424242 transparent;
+		scrollbar-color: var(--color-slate-500) transparent;
 	}
 
 	:global(*::-webkit-scrollbar) {
@@ -101,7 +110,7 @@
 	}
 
 	:global(*::-webkit-scrollbar-thumb) {
-		background-color: #424242;
+		background-color: var(--color-slate-500);
 		border-radius: 4px;
 	}
 </style>

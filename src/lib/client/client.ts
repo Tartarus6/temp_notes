@@ -1,10 +1,6 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '$lib/server/server';
 
-//     👆 **type-only** import
-// Pass AppRouter as generic here. 👇 This lets the `trpc` object know
-// what procedures are available on the server and their input/output types.
-
 const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
@@ -24,6 +20,15 @@ export async function createNote(input: { path: string; name: string }) {
 		path: input.path,
 		name: input.name,
 		content: 'This is a new note'
+	});
+	console.log('Created note:', note);
+	return await note;
+}
+
+export async function deleteNote(input: { path: string; name: string }) {
+	const note = await trpc.noteDelete.mutate({
+		path: input.path,
+		name: input.name
 	});
 	return await note;
 }
