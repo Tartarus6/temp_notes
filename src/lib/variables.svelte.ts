@@ -34,3 +34,7 @@ export const contextMenuState: contextMenuState = $state({
 	y: 0,
 	show: false
 });
+
+export const fileTreeState = $state({
+	isOld: false
+});

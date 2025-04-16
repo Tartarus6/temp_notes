@@ -1,6 +1,6 @@
 import { db } from './db';
 import { z } from 'zod';
-import { eq, like } from 'drizzle-orm';
+import { eq, like, and } from 'drizzle-orm';
 import { createHTTPServer } from '@trpc/server/adapters/standalone';
 import { publicProcedure, router } from './trpc';
 import { notesTable } from './schema';
@@ -31,7 +31,18 @@ const appRouter = router({
 					content: input.content
 				})
 				.returning();
-			return note;
+			return note[0];
+		}),
+
+	noteDelete: publicProcedure
+		.input(z.object({ path: z.string(), name: z.string() }))
+		.mutation(async (opts) => {
+			const { input } = opts;
+			const note = await db
+				.delete(notesTable)
+				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)))
+				.returning();
+			return note[0];
 		}),
 
 	noteByPath: publicProcedure
@@ -41,7 +52,7 @@ const appRouter = router({
 			const note = await db
 				.select()
 				.from(notesTable)
-				.where(eq(notesTable.path, input.path) && eq(notesTable.name, input.name));
+				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)));
 			return note;
 		}),
 
@@ -52,12 +63,11 @@ const appRouter = router({
 			const note = await db
 				.update(notesTable)
 				.set({ name: input.name, content: input.content })
-				.where(eq(notesTable.path, input.path) && eq(notesTable.name, input.name))
+				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)))
 				.returning();
 			return note;
 		}),
 
-	//TODO: why is the input in some whacky characters?
 	notesByPath: publicProcedure.input(z.string()).query(async (opts) => {
 		const { input } = opts;
 		const notes = await db

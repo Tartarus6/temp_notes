@@ -101,7 +101,7 @@
 				Bold,
 				Code.configure({
 					HTMLAttributes: {
-						class: 'p-1 bg-[#212325] rounded-md text-sm'
+						class: 'p-1 bg-slate-600 rounded-md text-sm'
 					}
 				}),
 				Italic,
