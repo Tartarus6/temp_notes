@@ -215,7 +215,6 @@ export const MathInline = Node.create<MathInlineOptions>({
 					dom.classList.remove('ProseMirror-selectednode');
 					requestAnimationFrame(() => {
 						// delete node if empty
-						console.log(mathField.latex());
 						if (mathField && mathField.latex() === '') {
 							const pos = props.getPos();
 							if (pos === undefined) {
