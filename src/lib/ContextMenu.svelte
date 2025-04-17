@@ -10,9 +10,9 @@
 
 	$effect(() => {
 		if (contextMenuState.show) {
-			document.addEventListener('click', handleClickOutside);
+			document.addEventListener('mousedown', handleClickOutside);
 		} else {
-			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('mousedown', handleClickOutside);
 		}
 	});
 </script>
