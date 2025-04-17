@@ -240,12 +240,7 @@
 		try {
 			removeNote({ name: node.name, path: node.path });
 
-			document.dispatchEvent(
-				new CustomEvent('fileDeleted', {
-					bubbles: true,
-					detail: { path: node.path, name: node.name }
-				})
-			);
+			fileTreeState.isOld = true; // Force a rerender of the file tree
 		} catch (error) {
 			console.error('Error deleting file:', error);
 		}

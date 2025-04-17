@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { fetchNotes, createNote } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, type FileNode } from './utils';
+	import { buildFileTree, type FileNode, handleContextMenu } from './utils';
 	import Node from './Node.svelte';
-	import { fileTreeState } from './variables.svelte';
+	import { fileTreeState, contextMenuState, type ContextMenuItem } from './variables.svelte';
 
 	// State management
 	let newNoteName = $state('');
@@ -11,6 +11,10 @@
 	let notesList: Note[] = $state([]);
 	let fileTree: FileNode[] = $state([]);
 	let isCreatingNew = $state(false);
+	let isCreatingNewFile = $state(false);
+	let isCreatingNewFolder = $state(false);
+	let newFileName = $state('');
+	let newFolderName = $state('');
 
 	// Initialize file tree
 	async function refreshFileTree() {
@@ -52,6 +56,99 @@
 		}
 	}
 
+	// Context menu setup for empty area
+	const contextMenuItems: ContextMenuItem[] = [
+		{ label: 'New File', onClick: handleCreateNewFile },
+		{ label: 'New Folder', onClick: handleCreateNewFolder }
+	];
+
+	// File operations
+	function handleCreateNewFile() {
+		isCreatingNewFile = true;
+		focusElement('new-root-file');
+	}
+
+	function handleCreateNewFolder() {
+		isCreatingNewFolder = true;
+		focusElement('new-root-folder');
+	}
+
+	function focusElement(id: string) {
+		setTimeout(() => {
+			const element = document.getElementById(id);
+			if (element) (element as HTMLInputElement).focus();
+		}, 0);
+	}
+
+	// Keyboard event handlers for new file/folder creation
+	function handleNewFileKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			if (newFileName.trim()) {
+				saveNewFile();
+			}
+		} else if (e.key === 'Escape') {
+			cancelNewFile();
+		}
+	}
+
+	function handleNewFolderKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			if (newFolderName.trim()) {
+				saveNewFolder();
+			}
+		} else if (e.key === 'Escape') {
+			cancelNewFolder();
+		}
+	}
+
+	// Save and cancel operations
+	async function saveNewFile() {
+		try {
+			const note = await createNote({
+				path: '/',
+				name: newFileName
+			});
+
+			if (note) {
+				isCreatingNewFile = false;
+				newFileName = '';
+				fileTreeState.isOld = true;
+			}
+		} catch (error) {
+			console.error('Error creating file:', error);
+		}
+	}
+
+	function cancelNewFile() {
+		isCreatingNewFile = false;
+		newFileName = '';
+	}
+
+	async function saveNewFolder() {
+		try {
+			// Create a placeholder file to establish the folder
+			const placeholderFileName = `.${newFolderName}.folder`;
+
+			const note = await createNote({
+				path: `/${newFolderName}/`,
+				name: placeholderFileName
+			});
+
+			if (note) {
+				isCreatingNewFolder = false;
+				newFolderName = '';
+				fileTreeState.isOld = true;
+			}
+		} catch (error) {
+			console.error('Error creating folder:', error);
+		}
+	}
+
+	function cancelNewFolder() {
+		isCreatingNewFolder = false;
+		newFolderName = '';
+	}
+
 	// Watch for tree update requests
 	$effect(() => {
 		if (fileTreeState.isOld) {
@@ -65,23 +162,6 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between px-2 py-1">
 		<span class="font-bold">TempNotes</span>
-		<div class="w-full text-right text-sm">temporary -></div>
-		<button
-			onmousedown={() => (isCreatingNew = true)}
-			class="rounded bg-slate-700 p-1 hover:bg-slate-600"
-			title="New Note"
-			aria-label="Create a new note"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 16 16"
-				fill="currentColor"
-			>
-				<path d="M14 7v1H8v6H7V8H1V7h6V1h1v6h6z" />
-			</svg>
-		</button>
 	</div>
 
 	<!-- File tree content -->
@@ -108,6 +188,69 @@
 		{#each fileTree as node}
 			<Node {node} />
 		{/each}
+
+		<!-- New file input -->
+		{#if isCreatingNewFile}
+			<div class="flex items-center px-2 py-1">
+				<span class="flex min-w-[16px] items-center justify-center">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 16 16"
+						fill="var(--color-blue-500)"
+					>
+						<path
+							d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 5h-3V2l3 3zM3 14V2h6v3.5l.5.5H13v8H3z"
+						/>
+					</svg>
+				</span>
+				<input
+					id="new-root-file"
+					type="text"
+					bind:value={newFileName}
+					placeholder="new-file.md"
+					onkeydown={handleNewFileKeydown}
+					onblur={cancelNewFile}
+					class="ml-1 w-full rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
+				/>
+			</div>
+		{/if}
+
+		<!-- New folder input -->
+		{#if isCreatingNewFolder}
+			<div class="flex items-center px-2 py-1">
+				<span class="flex min-w-[16px] items-center justify-center">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 16 16"
+						fill="transparent"
+						stroke="var(--color-blue-500)"
+					>
+						<path d="M2 2v12h12V4H8L6 2H2z" />
+					</svg>
+				</span>
+				<input
+					id="new-root-folder"
+					type="text"
+					bind:value={newFolderName}
+					placeholder="new-folder"
+					onkeydown={handleNewFolderKeydown}
+					onblur={cancelNewFolder}
+					class="ml-1 w-full rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
+				/>
+			</div>
+		{/if}
+
+		<!-- Empty space with context menu -->
+		<div
+			class="h-full w-full cursor-pointer"
+			oncontextmenu={(e) => handleContextMenu(e, contextMenuItems)}
+			role="region"
+			aria-label="File tree empty area"
+		></div>
 	</div>
 </div>
 
