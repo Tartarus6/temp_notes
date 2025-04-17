@@ -17,8 +17,10 @@
 	let open = $state(false);
 	let isHovered = $state(false);
 	let isCreatingNewFile = $state(false);
+	let isCreatingNewFolder = $state(false);
 	let isRenaming = $state(false);
 	let newFileName = $state('');
+	let newFolderName = $state('');
 	let newName = $state(node.name);
 
 	// Context menu setup
@@ -29,7 +31,9 @@
 
 		if (node.type === 'directory') {
 			items.push({ label: 'New File', onClick: handleCreateNewFile });
+			items.push({ label: 'New Folder', onClick: handleCreateNewFolder });
 			items.push({ label: 'Rename Folder', onClick: handleRename });
+			items.push({ label: 'Delete Folder', onClick: handleDeleteFolder });
 		} else if (node.type === 'file') {
 			items.push(
 				{ label: 'Rename', onClick: handleRename },
@@ -69,6 +73,14 @@
 		focusElement(inputId);
 	}
 
+	function handleCreateNewFolder() {
+		if (!open) toggleOpen();
+		isCreatingNewFolder = true;
+
+		const inputId = `new-folder-${node.path.replace(/\//g, '-')}`;
+		focusElement(inputId);
+	}
+
 	function handleRename() {
 		isRenaming = true;
 		newName = node.name;
@@ -97,6 +109,18 @@
 			}
 		} else if (e.key === 'Escape') {
 			cancelNewFile();
+		}
+	}
+
+	function handleNewFolderKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			console.log('Enter pressed');
+			if (newFolderName.trim()) {
+				console.log('saving new folder');
+				saveNewFolder();
+			}
+		} else if (e.key === 'Escape') {
+			cancelNewFolder();
 		}
 	}
 
@@ -181,6 +205,35 @@
 		newFileName = '';
 	}
 
+	async function saveNewFolder() {
+		try {
+			// Create the folder path - folders in this app are represented by their path
+			const folderPath = node.type === 'directory' ? node.path + node.name + '/' : node.path;
+
+			// Create a placeholder file to establish the folder
+			// The placeholder will have .folder extension to distinguish it
+			const placeholderFileName = `.${newFolderName}.folder`;
+
+			const note = await createNote({
+				path: folderPath + newFolderName + '/',
+				name: placeholderFileName
+			});
+
+			if (note) {
+				isCreatingNewFolder = false;
+				newFolderName = '';
+				fileTreeState.isOld = true;
+			}
+		} catch (error) {
+			console.error('Error creating folder:', error);
+		}
+	}
+
+	function cancelNewFolder() {
+		isCreatingNewFolder = false;
+		newFolderName = '';
+	}
+
 	function handleDeleteFile() {
 		if (!confirm(`Are you sure you want to delete ${node.name}?`)) return;
 
@@ -195,6 +248,24 @@
 			);
 		} catch (error) {
 			console.error('Error deleting file:', error);
+		}
+	}
+
+	function handleDeleteFolder() {
+		if (!confirm(`Are you sure you want to delete the folder "${node.name}" and ALL its contents?`))
+			return;
+
+		try {
+			const folderPath = node.path + node.name + '/';
+			import('./client/client').then(async ({ deleteFolderAndContainedFiles }) => {
+				const result = await deleteFolderAndContainedFiles(folderPath);
+
+				if (result) {
+					fileTreeState.isOld = true; // Force a rerender of the file tree
+				}
+			});
+		} catch (error) {
+			console.error('Error deleting folder:', error);
 		}
 	}
 </script>
@@ -304,7 +375,9 @@
 <!-- Child nodes (if directory is open) -->
 {#if open && node.children}
 	{#each node.children as child}
-		<Node node={child} indent={indent + 1} />
+		{#if !child.name.startsWith('.')}
+			<Node node={child} indent={indent + 1} />
+		{/if}
 	{/each}
 
 	<!-- New file input (if creating new file) -->
@@ -331,6 +404,33 @@
 				placeholder="new-file.md"
 				onkeydown={handleNewFileKeydown}
 				onblur={cancelNewFile}
+				class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
+			/>
+		</div>
+	{/if}
+
+	<!-- New folder input (if creating new folder) -->
+	{#if isCreatingNewFolder}
+		<div class="flex items-center" style="padding-left: {indent + 1}em">
+			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>
+			<span class="flex min-w-[16px] items-center justify-center">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 16 16"
+					fill="#519aba"
+				>
+					<path d="M2 2v12h12V4H8L6 2H2z" />
+				</svg>
+			</span>
+			<input
+				id="new-folder-{node.path.replace(/\//g, '-')}"
+				type="text"
+				bind:value={newFolderName}
+				placeholder="new-folder"
+				onkeydown={handleNewFolderKeydown}
+				onblur={cancelNewFolder}
 				class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
 			/>
 		</div>
