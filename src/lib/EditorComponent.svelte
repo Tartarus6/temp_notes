@@ -213,7 +213,7 @@
 <!-- We use editorUpdateCounter in a reactive block to force reactivity -->
 <!-- This block will re-render whenever editorUpdateCounter changes -->
 
-<div class="mx-4 flex flex-col gap-2">
+<div class="mx-4 flex flex-col gap-2 {editorState.note ? '' : 'hidden'}">
 	<!-- Note info and save status -->
 	<div class="flex items-center justify-between">
 		{#if editorState.note}

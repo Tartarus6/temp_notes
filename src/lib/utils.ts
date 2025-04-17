@@ -1,5 +1,5 @@
 import type { Note } from '$lib/server/server';
-import { editorState } from './variables.svelte';
+import { editorState, contextMenuState, type ContextMenuItem } from './variables.svelte';
 import { deleteNote, getNote, updateNote } from './client/client';
 
 /**
@@ -160,4 +160,17 @@ export async function removeNote(input: { name: string; path: string }): Promise
 		console.error('Error removing note:', error);
 		return false;
 	}
+}
+
+/**
+ * Handles context menu events in a consistent way across components
+ * @param e The mouse event from the context menu trigger
+ * @param items The context menu items to display
+ */
+export function handleContextMenu(e: MouseEvent, items: ContextMenuItem[]): void {
+	e.preventDefault();
+	contextMenuState.show = true;
+	contextMenuState.x = e.clientX;
+	contextMenuState.y = e.clientY;
+	contextMenuState.items = items;
 }
