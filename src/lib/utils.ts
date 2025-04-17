@@ -63,19 +63,13 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 
 // opens a note in the editor and sets the editor state
 export async function openNote(input: { name: string; path: string }) {
-	console.log('Opening note:', input);
 	saveNote().then(async () => {
-		console.log('A');
 		const note = await getNote({ path: input.path, name: input.name });
-		console.log('B');
 		if (editorState.editor && note) {
-			console.log('C');
 			editorState.editor.commands.setContent(note.content);
 			editorState.note = note;
 			// Save the currently open note in local storage
 			localStorage.setItem('current-note', JSON.stringify({ name: note.name, path: note.path }));
-		} else {
-			console.log('oops', editorState.editor, note);
 		}
 	});
 }
