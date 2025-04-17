@@ -164,8 +164,8 @@
 	});
 </script>
 
-<div class="sticky-container">
-	<div class="flex items-center justify-between px-2">
+<div class="sticky-container mx-4">
+	<div class="flex items-center justify-between">
 		{#if editorState.note}
 			<span>current note: {editorState.note.path}{editorState.note.name}</span>
 		{:else}
@@ -224,7 +224,9 @@
 		</div>
 	</div>
 
-	<div class="sticky top-0 m-2 grid rounded-full bg-gray-800 p-2 select-none">
+	<div
+		class="sticky top-0 my-2 grid rounded-md border-1 border-slate-500 bg-gray-800 p-2 select-none"
+	>
 		<div class="w-fit place-self-center">
 			{#if editorState.editor}
 				<button
@@ -283,12 +285,14 @@
 		</div>
 	</div>
 
-	<div class="mx-4 rounded-md border-1 border-red-400 bg-slate-800 focus-within:border-green-400">
+	<div class="rounded-md border-1 border-red-400 bg-slate-800 focus-within:border-green-400">
 		<div bind:this={editorElement}></div>
 	</div>
 </div>
 
-<style>
+<style lang="postcss">
+	@import 'tailwindcss';
+
 	.sticky-container {
 		display: flex;
 		flex-direction: column; /* Ensure buttons are above the editor */
@@ -297,18 +301,15 @@
 	button {
 		background-color: lightgray;
 		color: black;
+
+		padding: 0.5em 1em;
+		border: 1px solid #ccc;
+		cursor: pointer;
+		@apply rounded-sm;
 	}
 
 	button.active {
 		background-color: black;
 		color: white;
-	}
-
-	button {
-		margin-right: 5px; /* Add spacing between buttons */
-		padding: 5px 10px;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		cursor: pointer;
 	}
 </style>
