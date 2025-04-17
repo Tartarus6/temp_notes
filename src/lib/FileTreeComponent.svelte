@@ -5,48 +5,64 @@
 	import Node from './Node.svelte';
 	import { fileTreeState } from './variables.svelte';
 
+	// State management
 	let newNoteName = $state('');
 	let newNotePath = $state('/');
 	let notesList: Note[] = $state([]);
 	let fileTree: FileNode[] = $state([]);
 	let isCreatingNew = $state(false);
 
-	async function updateTree() {
+	// Initialize file tree
+	async function refreshFileTree() {
 		notesList = await fetchNotes();
-		fileTree = buildFileTree(await notesList);
+		fileTree = buildFileTree(notesList);
 	}
 
-	updateTree();
+	// Load initial data
+	refreshFileTree();
 
-	async function handleNewNote(input: { name: string; path: string }) {
-		const note = await createNote({ path: input.path, name: input.name });
+	// Create new note handler
+	async function handleNewNote() {
+		if (!newNoteName.trim()) return;
+
+		const note = await createNote({
+			path: newNotePath,
+			name: newNoteName
+		});
+
 		if (note) {
-			updateTree();
-			isCreatingNew = false;
-			newNoteName = '';
-			newNotePath = '';
+			refreshFileTree();
+			resetNewNoteForm();
 		}
 	}
 
-	function handleNewNoteKeydown(e: KeyboardEvent) {
+	// Reset form helper
+	function resetNewNoteForm() {
+		isCreatingNew = false;
+		newNoteName = '';
+		newNotePath = '/';
+	}
+
+	// Keyboard event handler
+	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
-			handleNewNote({ path: newNotePath, name: newNoteName });
+			handleNewNote();
 		} else if (e.key === 'Escape') {
-			isCreatingNew = false;
-			newNoteName = '';
-			newNotePath = '/';
+			resetNewNoteForm();
 		}
 	}
 
+	// Watch for tree update requests
 	$effect(() => {
 		if (fileTreeState.isOld) {
-			updateTree();
+			refreshFileTree();
 			fileTreeState.isOld = false;
 		}
 	});
 </script>
 
 <div class="flex h-full w-64 flex-col bg-slate-800">
+	<!-- Header -->
 	<div class="flex items-center justify-between px-2 py-1">
 		<span class="font-bold">TempNotes</span>
 		<div class="w-full text-right text-sm">temporary -></div>
@@ -68,6 +84,7 @@
 		</button>
 	</div>
 
+	<!-- File tree content -->
 	<div class="flex-1 overflow-auto">
 		{#if isCreatingNew}
 			<div class="px-2 py-1">
@@ -75,14 +92,14 @@
 					type="text"
 					bind:value={newNoteName}
 					placeholder="new note name"
-					onkeydown={handleNewNoteKeydown}
+					onkeydown={handleKeydown}
 					class="w-full rounded border border-blue-500 bg-slate-500 px-2 py-1 text-sm focus:outline-none"
 				/>
 				<input
 					type="text"
 					bind:value={newNotePath}
 					placeholder="path (e.g., /folder)"
-					onkeydown={handleNewNoteKeydown}
+					onkeydown={handleKeydown}
 					class="mt-1 w-full rounded border border-slate-500 bg-slate-500 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
 				/>
 			</div>
