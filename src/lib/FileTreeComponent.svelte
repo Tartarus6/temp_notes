@@ -48,7 +48,7 @@
 
 <div class="flex h-full w-64 flex-col bg-slate-800">
 	<div class="flex items-center justify-between px-2 py-1">
-		<span class="text-sm">Notes</span>
+		<span class="font-bold">TempNotes</span>
 		<div class="w-full text-right text-sm">temporary -></div>
 		<button
 			onmousedown={() => (isCreatingNew = true)}
