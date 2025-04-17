@@ -1,36 +1,46 @@
 <script lang="ts">
-	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 	import { onMount } from 'svelte';
 	import { Editor } from '@tiptap/core';
+	import { common, createLowlight } from 'lowlight';
 
-	import { editorState } from '$lib/variables.svelte';
-	import { saveNote } from '$lib/utils';
-
+	// Core extensions
 	import Document from '@tiptap/extension-document';
 	import Paragraph from '@tiptap/extension-paragraph';
 	import Text from '@tiptap/extension-text';
 	import Heading from '@tiptap/extension-heading';
+
+	// List extensions
 	import BulletList from '@tiptap/extension-bullet-list';
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem from '@tiptap/extension-list-item';
 	import TaskList from '@tiptap/extension-task-list';
 	import TaskItem from '@tiptap/extension-task-item';
 
+	// Formatting extensions
 	import Bold from '@tiptap/extension-bold';
 	import Code from '@tiptap/extension-code';
 	import Italic from '@tiptap/extension-italic';
-
 	import HorizontalRule from '@tiptap/extension-horizontal-rule';
 	import TextAlign from '@tiptap/extension-text-align';
+	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 
+	// App imports
+	import { editorState } from '$lib/variables.svelte';
+	import { saveNote } from '$lib/utils';
 	import { MathInline } from '$lib/mathquill';
 
-	import { common, createLowlight } from 'lowlight';
-
+	// Styles
 	import 'highlight.js/styles/github-dark.css';
 
-	// extends CodeBlockLowlight to add tab behaviour
-	export const CoderBlockLowlight = CodeBlockLowlight.extend({
+	// =========================================
+	// Configuration
+	// =========================================
+
+	// Configure syntax highlighting
+	const lowlight = createLowlight(common);
+
+	// Enhanced CodeBlock with tab support
+	const EnhancedCodeBlock = CodeBlockLowlight.extend({
 		addKeyboardShortcuts() {
 			return {
 				Tab: () => {
@@ -44,15 +54,28 @@
 		}
 	});
 
-	const lowlight = createLowlight(common);
+	// =========================================
+	// Component state
+	// =========================================
 
+	// UI Elements
 	let editorElement: HTMLDivElement;
 
+	// Save state tracking
 	let saveStatus: 'saved' | 'saving' | 'error' = $state('saved');
-	let saveTimeout: NodeJS.Timeout;
+	let saveTimeout: ReturnType<typeof setTimeout>;
 
-	// debounced save function for live note saving
-	async function saveLive() {
+	// Math input tracking
+	let lastArrowKeyDirection: 'left' | 'right' = $state('right');
+
+	// =========================================
+	// Functions
+	// =========================================
+
+	/**
+	 * Debounced save function for autosaving notes while typing
+	 */
+	function debouncedSave(): void {
 		if (!editorState.editor || !editorState.note) return;
 
 		clearTimeout(saveTimeout);
@@ -66,12 +89,13 @@
 				saveStatus = 'error';
 				console.error('Failed to save:', err);
 			}
-		}, 1000); // Save after 1 second of no typing
+		}, 1000);
 	}
 
-	// tracking for entering and exiting math mode
-	let lastArrowKeyDirection: 'left' | 'right' = 'right'; // Default to right
-	function handleKeyDown(event: KeyboardEvent) {
+	/**
+	 * Track arrow key direction for math mode navigation
+	 */
+	function handleKeyDown(event: KeyboardEvent): void {
 		if (event.key === 'ArrowLeft') {
 			lastArrowKeyDirection = 'left';
 		} else if (event.key === 'ArrowRight') {
@@ -79,48 +103,49 @@
 		}
 	}
 
+	/**
+	 * Initialize editor on component mount
+	 */
 	onMount(() => {
-		// Check local storage for a previously saved note, open that note if it exists
-		if (typeof window !== 'undefined') {
-			const storedNoteName = localStorage.getItem('noteName');
-			const storedNotePath = localStorage.getItem('notePath');
-			if (storedNoteName && storedNotePath) {
-				// noteNameInstance.set(storedNoteName);
-			}
-		}
-
-		// creating the editor instance
-		let editor = new Editor({
+		// Create editor instance
+		const editor = new Editor({
 			element: editorElement,
 			extensions: [
+				// Core document structure
 				Document,
 				Paragraph,
 				Text,
 				Heading,
 				HorizontalRule,
+
+				// Text formatting
 				Bold,
+				Italic,
 				Code.configure({
 					HTMLAttributes: {
 						class: 'p-1 bg-slate-600 rounded-md text-sm'
 					}
 				}),
-				Italic,
+
+				// Text alignment
 				TextAlign.configure({
 					defaultAlignment: 'left',
-					types: ['heading', 'paragraph'] // Define which node types can be aligned
+					types: ['heading', 'paragraph']
 				}),
-				CoderBlockLowlight.configure({
+
+				// Code blocks
+				EnhancedCodeBlock.configure({
 					lowlight,
 					exitOnTripleEnter: false,
 					exitOnArrowDown: false,
-
 					HTMLAttributes: {
 						class: 'p-2 bg-slate-950 rounded-md'
 					}
 				}),
+
+				// Lists
 				BulletList.configure({
 					itemTypeName: 'listItem',
-
 					HTMLAttributes: {
 						class: 'bullet-list'
 					}
@@ -131,32 +156,53 @@
 				TaskItem.configure({
 					nested: true
 				}),
+
+				// Math input
 				MathInline.configure({
 					HTMLAttributes: {
 						class: 'p-1 border-slate-700 border-[0.1em] rounded-sm'
 					},
-
 					spaceBehavesLikeTab: true,
 					autoCommands: 'pi theta sqrt sum choose int',
 					getNavigationDirection: () => lastArrowKeyDirection
 				})
 			],
-			content: editorState.note?.content || '<p>Hello World!</p>', // Use existing content if available
+			content: editorState.note?.content || '<p>Hello World!</p>',
 			onUpdate: ({ editor }) => {
 				// Trigger save when content changes
-				saveLive();
+				debouncedSave();
+				// Optionally update reactive states here too if needed on content change specifically
+				// updateButtonStates(editor); // Not strictly needed if onTransaction covers it
 			},
-			onTransaction: () => {
-				// force re-render so `editor.isActive` works as expected
-				editorState.editor = editor;
+			onTransaction: ({ editor }) => {
+				// Update the editor reference AND the specific boolean states
+				editorState.editor = editor; // Keep this if other parts rely on the editor instance directly
+				updateButtonStates(editor);
 			}
 		});
 
-		// Add keydown listener to the editor's DOM element
+		// Function to update reactive boolean states
+		function updateButtonStates(currentEditor: Editor) {
+			editorState.isHeading1Active = currentEditor.isActive('heading', { level: 1 });
+			editorState.isHeading2Active = currentEditor.isActive('heading', { level: 2 });
+			editorState.isParagraphActive = currentEditor.isActive('paragraph');
+			editorState.isTextAlignLeftActive = currentEditor.isActive({ textAlign: 'left' });
+			editorState.isTextAlignCenterActive = currentEditor.isActive({ textAlign: 'center' });
+			editorState.isTextAlignRightActive = currentEditor.isActive({ textAlign: 'right' });
+			editorState.isTextAlignJustifyActive = currentEditor.isActive({ textAlign: 'justify' });
+			// Update other states (Bold, Italic, etc.) here if you add buttons for them
+		}
+
+		// Set up event handlers
 		editorElement.addEventListener('keydown', handleKeyDown);
 
+		// Store editor reference in global state
 		editorState.editor = editor;
 
+		// Initial state update right after editor creation
+		updateButtonStates(editor);
+
+		// Cleanup on component unmount
 		return () => {
 			editor.destroy();
 			editorElement.removeEventListener('keydown', handleKeyDown);
@@ -164,17 +210,24 @@
 	});
 </script>
 
-<div class="sticky-container mx-4">
+<!-- We use editorUpdateCounter in a reactive block to force reactivity -->
+<!-- This block will re-render whenever editorUpdateCounter changes -->
+
+<div class="mx-4 flex flex-col gap-2">
+	<!-- Note info and save status -->
 	<div class="flex items-center justify-between">
 		{#if editorState.note}
-			<span>current note: {editorState.note.path}{editorState.note.name}</span>
+			<span class="text-sm font-medium">
+				{editorState.note.path}{editorState.note.name}
+			</span>
 		{:else}
-			<span>No note selected</span>
+			<span class="text-sm text-slate-400">No note selected</span>
 		{/if}
 
-		<div class="flex items-center gap-2">
+		<!-- Save status indicator -->
+		<div class="flex items-center">
 			{#if saveStatus === 'saving'}
-				<span class="flex items-center gap-1 text-yellow-400">
+				<span class="flex items-center gap-1 text-yellow-400" title="Saving...">
 					<svg
 						class="size-5 animate-spin"
 						xmlns="http://www.w3.org/2000/svg"
@@ -191,7 +244,7 @@
 					</svg>
 				</span>
 			{:else if saveStatus === 'saved'}
-				<span class="flex items-center gap-1 text-green-400">
+				<span class="flex items-center gap-1 text-green-400" title="Saved">
 					<svg
 						class="size-5"
 						xmlns="http://www.w3.org/2000/svg"
@@ -206,7 +259,7 @@
 					</svg>
 				</span>
 			{:else}
-				<span class="flex items-center gap-1 text-red-400">
+				<span class="flex items-center gap-1 text-red-400" title="Error saving">
 					<svg
 						class="size-5"
 						xmlns="http://www.w3.org/2000/svg"
@@ -224,6 +277,7 @@
 		</div>
 	</div>
 
+	<!-- Editor toolbar -->
 	<div
 		class="sticky top-0 my-2 grid rounded-md border-1 border-slate-500 bg-gray-800 p-2 select-none"
 	>
@@ -233,7 +287,7 @@
 					onmousedown={() =>
 						editorState.editor &&
 						editorState.editor.chain().focus().toggleHeading({ level: 1 }).run()}
-					class:active={editorState.editor.isActive('heading', { level: 1 })}
+					class:active={editorState.isHeading1Active}
 				>
 					H1
 				</button>
@@ -241,14 +295,14 @@
 					onmousedown={() =>
 						editorState.editor &&
 						editorState.editor.chain().focus().toggleHeading({ level: 2 }).run()}
-					class:active={editorState.editor.isActive('heading', { level: 2 })}
+					class:active={editorState.isHeading2Active}
 				>
 					H2
 				</button>
 				<button
 					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setParagraph().run()}
-					class:active={editorState.editor.isActive('paragraph')}
+					class:active={editorState.isParagraphActive}
 				>
 					P
 				</button>
@@ -256,28 +310,28 @@
 				<button
 					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('left').run()}
-					class:active={editorState.editor.isActive({ textAlign: 'left' })}
+					class:active={editorState.isTextAlignLeftActive}
 				>
 					Left
 				</button>
 				<button
 					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('center').run()}
-					class:active={editorState.editor.isActive({ textAlign: 'center' })}
+					class:active={editorState.isTextAlignCenterActive}
 				>
 					Center
 				</button>
 				<button
 					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('right').run()}
-					class:active={editorState.editor.isActive({ textAlign: 'right' })}
+					class:active={editorState.isTextAlignRightActive}
 				>
 					Right
 				</button>
 				<button
 					onmousedown={() =>
 						editorState.editor && editorState.editor.chain().focus().setTextAlign('justify').run()}
-					class:active={editorState.editor.isActive({ textAlign: 'justify' })}
+					class:active={editorState.isTextAlignJustifyActive}
 				>
 					Justify
 				</button>
@@ -285,31 +339,22 @@
 		</div>
 	</div>
 
-	<div class="rounded-md border-1 border-red-400 bg-slate-800 focus-within:border-green-400">
-		<div bind:this={editorElement}></div>
+	<!-- Editor content area -->
+	<div
+		class="rounded-md border border-slate-600 bg-slate-800 p-4 transition-colors focus-within:border-blue-400"
+	>
+		<div bind:this={editorElement} class="prose prose-invert max-w-none"></div>
 	</div>
 </div>
 
 <style lang="postcss">
 	@import 'tailwindcss';
 
-	.sticky-container {
-		display: flex;
-		flex-direction: column; /* Ensure buttons are above the editor */
-	}
-
 	button {
-		background-color: lightgray;
-		color: black;
-
-		padding: 0.5em 1em;
-		border: 1px solid #ccc;
-		cursor: pointer;
-		@apply rounded-sm;
+		@apply rounded bg-slate-700 px-3 py-1 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-600;
 	}
 
 	button.active {
-		background-color: black;
-		color: white;
+		@apply bg-blue-500 text-white;
 	}
 </style>
