@@ -121,3 +121,38 @@ export async function renameFolderAndUpdateFiles(input: { oldPath: string; newPa
 
 	return affectedNotes.length > 0;
 }
+
+export async function deleteFolderAndContainedFiles(folderPath: string) {
+	// Get all notes
+	const notes = await fetchNotes();
+
+	// Find all notes that are within the folder path
+	const affectedNotes = notes.filter((note) => (note.path + note.name).startsWith(folderPath));
+
+	// Check if current note is affected
+	const currentNoteStr = localStorage.getItem('current-note');
+	let currentNote = currentNoteStr ? JSON.parse(currentNoteStr) : null;
+	const isCurrentNoteAffected =
+		currentNote && (currentNote.path + currentNote.name).startsWith(folderPath);
+
+	// Delete each affected note
+	for (const note of affectedNotes) {
+		await trpc.noteDelete.mutate({
+			path: note.path,
+			name: note.name
+		});
+	}
+
+	// If the current note was affected, clear it from localStorage
+	if (isCurrentNoteAffected) {
+		localStorage.removeItem('current-note');
+		// Import editorState to clear the editor
+		const { editorState } = await import('../variables.svelte');
+		if (editorState.editor) {
+			editorState.editor.commands.setContent('');
+			editorState.note = null;
+		}
+	}
+
+	return affectedNotes.length > 0;
+}
