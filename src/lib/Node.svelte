@@ -15,7 +15,6 @@
 
 	// State
 	let open = $state(false);
-	let isHovered = $state(false);
 	let isCreatingNewFile = $state(false);
 	let isCreatingNewFolder = $state(false);
 	let isRenaming = $state(false);
@@ -268,8 +267,6 @@
 <div
 	class="relative flex items-center text-sm select-none hover:bg-slate-700"
 	style="padding-left: {indent}em"
-	onmouseenter={() => (isHovered = true)}
-	onmouseleave={() => (isHovered = false)}
 	oncontextmenu={handleContextMenu}
 	role="button"
 	tabindex="0"

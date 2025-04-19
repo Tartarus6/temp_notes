@@ -158,14 +158,14 @@
 	});
 </script>
 
-<div class="flex h-full w-64 flex-col bg-slate-800">
+<div class="flex h-full w-64 flex-col overflow-x-scroll bg-slate-800">
 	<!-- Header -->
 	<div class="flex items-center justify-between px-2 py-1">
 		<span class="font-bold">TempNotes</span>
 	</div>
 
 	<!-- File tree content -->
-	<div class="flex-1 overflow-auto">
+	<div class="w-fit min-w-full flex-1">
 		{#if isCreatingNew}
 			<div class="px-2 py-1">
 				<input
@@ -246,7 +246,7 @@
 
 		<!-- Empty space with context menu -->
 		<div
-			class="h-full w-full cursor-pointer"
+			class="h-full w-full"
 			oncontextmenu={(e) => handleContextMenu(e, contextMenuItems)}
 			role="region"
 			aria-label="File tree empty area"

@@ -60,6 +60,7 @@
 
 	// UI Elements
 	let editorElement: HTMLDivElement;
+	let editorTitleElement: HTMLDivElement;
 
 	// Save state tracking
 	let saveStatus: 'saved' | 'saving' | 'error' = $state('saved');
@@ -213,16 +214,70 @@
 <!-- We use editorUpdateCounter in a reactive block to force reactivity -->
 <!-- This block will re-render whenever editorUpdateCounter changes -->
 
-<div class="mx-4 flex flex-col gap-2 {editorState.note ? '' : 'hidden'}">
-	<!-- Note info and save status -->
-	<div class="flex items-center justify-between">
-		{#if editorState.note}
-			<span class="text-sm font-medium">
-				{editorState.note.path}{editorState.note.name}
-			</span>
-		{:else}
-			<span class="text-sm text-slate-400">No note selected</span>
-		{/if}
+<div class="mx-4 flex flex-col gap-2 {editorState.note ? '' : 'hidden'} h-full overflow-y-scroll">
+	<!-- Editor toolbar -->
+	<div
+		class="sticky top-0 z-10 my-2 grid grid-cols-[1fr_auto] items-center rounded-md border-1 border-slate-500 bg-gray-800 p-2 select-none"
+	>
+		<div class="place-self-center">
+			{#if editorState.editor}
+				<button
+					onmousedown={() =>
+						editorState.editor &&
+						editorState.editor.chain().focus().toggleHeading({ level: 1 }).run()}
+					class:active={editorState.isHeading1Active}
+				>
+					H1
+				</button>
+				<button
+					onmousedown={() =>
+						editorState.editor &&
+						editorState.editor.chain().focus().toggleHeading({ level: 2 }).run()}
+					class:active={editorState.isHeading2Active}
+				>
+					H2
+				</button>
+				<button
+					onmousedown={() =>
+						editorState.editor && editorState.editor.chain().focus().setParagraph().run()}
+					class:active={editorState.isParagraphActive}
+				>
+					P
+				</button>
+
+				<!-- Divider -->
+				<span class="mx-2 inline-block"></span>
+
+				<button
+					onmousedown={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('left').run()}
+					class:active={editorState.isTextAlignLeftActive}
+				>
+					Left
+				</button>
+				<button
+					onmousedown={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('center').run()}
+					class:active={editorState.isTextAlignCenterActive}
+				>
+					Center
+				</button>
+				<button
+					onmousedown={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('right').run()}
+					class:active={editorState.isTextAlignRightActive}
+				>
+					Right
+				</button>
+				<button
+					onmousedown={() =>
+						editorState.editor && editorState.editor.chain().focus().setTextAlign('justify').run()}
+					class:active={editorState.isTextAlignJustifyActive}
+				>
+					Justify
+				</button>
+			{/if}
+		</div>
 
 		<!-- Save status indicator -->
 		<div class="flex items-center">
@@ -277,73 +332,23 @@
 		</div>
 	</div>
 
-	<!-- Editor toolbar -->
-	<div
-		class="sticky top-0 my-2 grid rounded-md border-1 border-slate-500 bg-gray-800 p-2 select-none"
-	>
-		<div class="w-fit place-self-center">
-			{#if editorState.editor}
-				<button
-					onmousedown={() =>
-						editorState.editor &&
-						editorState.editor.chain().focus().toggleHeading({ level: 1 }).run()}
-					class:active={editorState.isHeading1Active}
-				>
-					H1
-				</button>
-				<button
-					onmousedown={() =>
-						editorState.editor &&
-						editorState.editor.chain().focus().toggleHeading({ level: 2 }).run()}
-					class:active={editorState.isHeading2Active}
-				>
-					H2
-				</button>
-				<button
-					onmousedown={() =>
-						editorState.editor && editorState.editor.chain().focus().setParagraph().run()}
-					class:active={editorState.isParagraphActive}
-				>
-					P
-				</button>
-
-				<button
-					onmousedown={() =>
-						editorState.editor && editorState.editor.chain().focus().setTextAlign('left').run()}
-					class:active={editorState.isTextAlignLeftActive}
-				>
-					Left
-				</button>
-				<button
-					onmousedown={() =>
-						editorState.editor && editorState.editor.chain().focus().setTextAlign('center').run()}
-					class:active={editorState.isTextAlignCenterActive}
-				>
-					Center
-				</button>
-				<button
-					onmousedown={() =>
-						editorState.editor && editorState.editor.chain().focus().setTextAlign('right').run()}
-					class:active={editorState.isTextAlignRightActive}
-				>
-					Right
-				</button>
-				<button
-					onmousedown={() =>
-						editorState.editor && editorState.editor.chain().focus().setTextAlign('justify').run()}
-					class:active={editorState.isTextAlignJustifyActive}
-				>
-					Justify
-				</button>
-			{/if}
-		</div>
-	</div>
-
 	<!-- Editor content area -->
 	<div
-		class="rounded-md border border-slate-600 bg-slate-800 p-4 transition-colors focus-within:border-blue-400"
+		class="rounded-md border border-slate-600 bg-slate-800 transition-colors focus-within:border-blue-400"
 	>
-		<div bind:this={editorElement} class="prose prose-invert max-w-none"></div>
+		<div
+			class="break-after-all overflow-hidden border-b-2 border-b-slate-600 px-1 text-center break-words"
+		>
+			<h1
+				bind:this={editorTitleElement}
+				spellcheck="false"
+				contenteditable="{/* TODO: set to true and make stuff work */ ''}false"
+				onkeydown={/*TODO: (e) => handleTitleKeyDown(e, editorTitleElement.innerText)*/ undefined}
+			>
+				{editorState.note?.name}
+			</h1>
+		</div>
+		<div bind:this={editorElement} class="overflow-y-scroll"></div>
 	</div>
 </div>
 

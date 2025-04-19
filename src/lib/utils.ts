@@ -1,6 +1,6 @@
 import type { Note } from '$lib/server/server';
 import { editorState, contextMenuState, type ContextMenuItem } from './variables.svelte';
-import { deleteNote, getNote, updateNote } from './client/client';
+import { deleteNote, getNote, renameNote, updateNote } from './client/client';
 
 /**
  * Represents a node in the file system tree
@@ -82,7 +82,7 @@ function sortFileTree(node: FileNode): void {
 /**
  * Opens a note in the editor
  */
-export async function openNote(input: { name: string; path: string }): Promise<Note | null> {
+export async function openNote(input: { path: string; name: string }): Promise<Note | null> {
 	try {
 		// Save current note before opening a new one
 		await saveNote();
@@ -142,7 +142,7 @@ export async function saveNote(): Promise<Note | null> {
 /**
  * Deletes a note and clears editor if it's currently open
  */
-export async function removeNote(input: { name: string; path: string }): Promise<boolean> {
+export async function removeNote(input: { path: string; name: string }): Promise<boolean> {
 	try {
 		await deleteNote(input);
 

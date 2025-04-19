@@ -30,5 +30,7 @@
 
 <div class="grid h-screen grid-flow-row grid-cols-[auto_1fr]">
 	<FileTreeComponent />
-	<EditorComponent />
+	<div class="overflow-hidden">
+		<EditorComponent />
+	</div>
 </div>
