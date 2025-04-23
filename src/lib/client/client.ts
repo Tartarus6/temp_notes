@@ -156,3 +156,18 @@ export async function deleteFolderAndContainedFiles(folderPath: string) {
 
 	return affectedNotes.length > 0;
 }
+
+export async function uploadImageToServer(input: {
+	filename: string;
+	mimetype: string;
+	data: string;
+}) {
+	return await trpc.imageUpload.mutate(input);
+}
+
+export async function getImageFromServer(imageId: string) {
+	return await trpc.imageGet.query(imageId);
+}
+
+// Export TRPC client for direct use in other files
+export const client = trpc;

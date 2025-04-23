@@ -1,6 +1,6 @@
 import type { Note } from '$lib/server/server';
 import { editorState, contextMenuState, type ContextMenuItem } from './variables.svelte';
-import { deleteNote, getNote, renameNote, updateNote } from './client/client';
+import { deleteNote, getNote, uploadImageToServer, updateNote } from './client/client';
 
 /**
  * Represents a node in the file system tree
@@ -173,4 +173,33 @@ export function handleContextMenu(e: MouseEvent, items: ContextMenuItem[]): void
 	contextMenuState.x = e.clientX;
 	contextMenuState.y = e.clientY;
 	contextMenuState.items = items;
+}
+
+// Image handling functions
+export async function uploadImage(file: File) {
+	try {
+		// Convert file to base64
+		const base64 = await fileToBase64(file);
+
+		// Upload image to server
+		const image = await uploadImageToServer({
+			filename: file.name,
+			mimetype: file.type,
+			data: base64.split(',')[1] // Remove data URL prefix
+		});
+
+		return image;
+	} catch (error) {
+		console.error('Error uploading image:', error);
+		throw error;
+	}
+}
+
+export function fileToBase64(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.readAsDataURL(file);
+		reader.onload = () => resolve(reader.result as string);
+		reader.onerror = (error) => reject(error);
+	});
 }
