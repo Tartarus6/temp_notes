@@ -25,6 +25,9 @@
 	import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 	import Image from '@tiptap/extension-image';
 
+	// Functional extensions
+	import History from '@tiptap/extension-history';
+
 	// App imports
 	import { editorState } from '$lib/variables.svelte';
 	import { saveNote, uploadImage } from '$lib/utils';
@@ -324,7 +327,8 @@
 					HTMLAttributes: {
 						class: 'max-w-full rounded-md'
 					}
-				})
+				}),
+				History
 			],
 			content: editorState.note?.content || '<p>Hello World!</p>',
 			onUpdate: ({ editor }) => {
@@ -441,6 +445,9 @@
 					Justify
 				</button>
 
+				<!-- Divider -->
+				<span class="mx-2 inline-block"></span>
+
 				<!-- Image insert button -->
 				<button
 					onmousedown={() => {
@@ -512,6 +519,17 @@
 					}}
 				>
 					Image
+				</button>
+
+				<!-- Divider -->
+				<span class="mx-2 inline-block"></span>
+
+				<button onmousedown={() => editorState.editor && editorState.editor.commands.undo()}>
+					Undo
+				</button>
+
+				<button onmousedown={() => editorState.editor && editorState.editor.commands.redo()}>
+					Redo
 				</button>
 			{/if}
 		</div>
