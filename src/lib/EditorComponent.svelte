@@ -125,108 +125,7 @@
 
 		// Process each image
 		for (const file of imageFiles) {
-			try {
-				// Generate a temporary ID for this image placeholder
-				const placeholderId = `image-placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-
-				// Insert a placeholder immediately to secure the cursor position
-				editorState.editor
-					.chain()
-					.focus()
-					.setImage({
-						src: '/favicon.png', // Using your favicon as a placeholder
-						alt: 'Uploading image...'
-					})
-					.run();
-
-				// Add styling to make it clear this is a placeholder
-				setTimeout(() => {
-					// Find the last inserted image (should be the one we just added)
-					const images = document.querySelectorAll('.ProseMirror img');
-					const placeholder = images[images.length - 1];
-					if (placeholder) {
-						placeholder.setAttribute('data-placeholder-id', placeholderId);
-						placeholder.classList.add('image-uploading');
-					}
-				}, 0);
-
-				// Upload the image in the background
-				const uploadedImage = await uploadImage(file);
-
-				// If upload was successful, replace the placeholder with the actual image
-				if (uploadedImage) {
-					// Create a data URL from the base64 image data
-					const imageUrl = `data:${uploadedImage.mimetype};base64,${uploadedImage.data}`;
-
-					// Find the placeholder in the document
-					const placeholder = document.querySelector(`img[data-placeholder-id="${placeholderId}"]`);
-					if (placeholder) {
-						// Replace the placeholder with the actual image
-						placeholder.setAttribute('src', imageUrl);
-						placeholder.setAttribute('alt', uploadedImage.filename || 'Dropped image');
-						placeholder.classList.remove('image-uploading');
-						placeholder.removeAttribute('data-placeholder-id');
-					}
-				}
-			} catch (err) {
-				console.error('Error handling dropped image:', err);
-				// Since placeholderId is scoped within the try block, we need to handle errors differently
-				const images = document.querySelectorAll('.ProseMirror img.image-uploading');
-				// If there's an uploading image, it's probably our placeholder that failed
-				if (images.length > 0) {
-					// Remove the last uploading image (which should be the one that failed)
-					images[images.length - 1].remove();
-				}
-			}
-		}
-	}
-
-	/**
-	 * Handle pasted images
-	 */
-	async function handlePaste(event: ClipboardEvent): Promise<void> {
-		if (!event.clipboardData?.items || !editorState.editor) return;
-
-		// Check for images in clipboard
-		const items = Array.from(event.clipboardData.items);
-		const imageItems = items.filter((item) => item.type.startsWith('image/'));
-
-		if (imageItems.length === 0) return;
-
-		// We're handling the image, so prevent default paste behavior - prevent at the highest level
-		// This is crucial to prevent the browser's default paste behavior
-		event.preventDefault();
-		event.stopPropagation();
-
-		// Only process the first image to avoid duplicates
-		const item = imageItems[0];
-		const file = item.getAsFile();
-		if (!file) return;
-
-		try {
-			// Generate a temporary ID for this image placeholder
-			const placeholderId = `image-placeholder-${Date.now()}`;
-
-			// Insert a placeholder immediately to secure the cursor position
-			editorState.editor
-				.chain()
-				.focus()
-				.setImage({
-					src: '/favicon.png', // Using your favicon as a placeholder
-					alt: 'Uploading image...'
-				})
-				.run();
-
-			// Add styling to make it clear this is a placeholder
-			setTimeout(() => {
-				// Find the last inserted image (should be the one we just added)
-				const images = document.querySelectorAll('.ProseMirror img');
-				const placeholder = images[images.length - 1];
-				if (placeholder) {
-					placeholder.setAttribute('data-placeholder-id', placeholderId);
-					placeholder.classList.add('image-uploading');
-				}
-			}, 0);
+			console.log('File:', file);
 
 			// Upload the image in the background
 			const uploadedImage = await uploadImage(file);
@@ -236,25 +135,77 @@
 				// Create a data URL from the base64 image data
 				const imageUrl = `data:${uploadedImage.mimetype};base64,${uploadedImage.data}`;
 
-				// Find the placeholder in the document
-				const placeholder = document.querySelector(`img[data-placeholder-id="${placeholderId}"]`);
-				if (placeholder) {
-					// Replace the placeholder with the actual image
-					placeholder.setAttribute('src', imageUrl);
-					placeholder.setAttribute('alt', uploadedImage.filename || 'Pasted image');
-					placeholder.classList.remove('image-uploading');
-					placeholder.removeAttribute('data-placeholder-id');
-				}
-			}
-		} catch (err) {
-			console.error('Error handling pasted image:', err);
-			// Since placeholderId is now scoped only in the try block, we need to handle error differently
-			const images = document.querySelectorAll('.ProseMirror img.image-uploading');
-			// If there's an uploading image, it's probably our placeholder that failed
-			if (images.length > 0) {
-				images[images.length - 1].remove();
+				editorState.editor.commands.setImage({
+					src: imageUrl,
+					alt: 'image'
+				});
 			}
 		}
+	}
+
+	/**
+	 * Handle pasted images
+	 */
+	async function handlePaste(event: ClipboardEvent): Promise<void> {
+		if (!event.clipboardData?.items || !editorState.editor) return;
+		// Check for images in clipboard
+		const items = Array.from(event.clipboardData.items);
+		const imageItems = items.filter((item) => item.type.startsWith('image/'));
+		if (imageItems.length === 0) return;
+
+		// We're handling the image, so prevent default paste behavior - prevent at the highest level
+		// This is crucial to prevent the browser's default paste behavior
+		event.preventDefault();
+		event.stopPropagation();
+
+		const files = Array.from(event.clipboardData.files);
+
+		for (const file of files) {
+			console.log('File:', file);
+
+			// Upload the image in the background
+			const uploadedImage = await uploadImage(file);
+
+			// If upload was successful, replace the placeholder with the actual image
+			if (uploadedImage) {
+				// Create a data URL from the base64 image data
+				const imageUrl = `data:${uploadedImage.mimetype};base64,${uploadedImage.data}`;
+
+				editorState.editor.commands.setImage({
+					src: imageUrl,
+					alt: 'image'
+				});
+			}
+		}
+	}
+
+	/**
+	 * Handle image upload via file input
+	 */
+	async function handleImageFileInput(): Promise<void> {
+		const fileInput = document.createElement('input');
+		fileInput.type = 'file';
+		fileInput.accept = 'image/*';
+		fileInput.onchange = async (e) => {
+			const target = e.target as HTMLInputElement;
+			const file = target.files?.[0];
+			if (!file || !editorState.editor) return;
+
+			// Upload the image in the background
+			const uploadedImage = await uploadImage(file);
+
+			// If upload was successful, replace the placeholder with the actual image
+			if (uploadedImage) {
+				// Create a data URL from the base64 image data
+				const imageUrl = `data:${uploadedImage.mimetype};base64,${uploadedImage.data}`;
+
+				editorState.editor.commands.setImage({
+					src: imageUrl,
+					alt: 'image'
+				});
+			}
+		};
+		fileInput.click();
 	}
 
 	/**
@@ -449,77 +400,7 @@
 				<span class="mx-2 inline-block"></span>
 
 				<!-- Image insert button -->
-				<button
-					onmousedown={() => {
-						const fileInput = document.createElement('input');
-						fileInput.type = 'file';
-						fileInput.accept = 'image/*';
-						fileInput.onchange = async (e) => {
-							const target = e.target as HTMLInputElement;
-							const file = target.files?.[0];
-							if (!file || !editorState.editor) return;
-
-							try {
-								// Generate a temporary ID for this image placeholder
-								const placeholderId = `image-placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-
-								// Insert a placeholder immediately to secure the cursor position
-								editorState.editor
-									.chain()
-									.focus()
-									.setImage({
-										src: '/favicon.png', // Using your favicon as a placeholder
-										alt: 'Uploading image...'
-									})
-									.run();
-
-								// Add styling to make it clear this is a placeholder
-								setTimeout(() => {
-									// Find the last inserted image (should be the one we just added)
-									const images = document.querySelectorAll('.ProseMirror img');
-									const placeholder = images[images.length - 1];
-									if (placeholder) {
-										placeholder.setAttribute('data-placeholder-id', placeholderId);
-										placeholder.classList.add('image-uploading');
-									}
-								}, 0);
-
-								// Upload the image in the background
-								const uploadedImage = await uploadImage(file);
-
-								// If upload was successful, replace the placeholder with the actual image
-								if (uploadedImage) {
-									// Create a data URL from the base64 image data
-									const imageUrl = `data:${uploadedImage.mimetype};base64,${uploadedImage.data}`;
-
-									// Find the placeholder in the document
-									const placeholder = document.querySelector(
-										`img[data-placeholder-id="${placeholderId}"]`
-									);
-									if (placeholder) {
-										// Replace the placeholder with the actual image
-										placeholder.setAttribute('src', imageUrl);
-										placeholder.setAttribute('alt', uploadedImage.filename || 'Uploaded image');
-										placeholder.classList.remove('image-uploading');
-										placeholder.removeAttribute('data-placeholder-id');
-									}
-								}
-							} catch (err) {
-								console.error('Error uploading image:', err);
-								// Since placeholderId is scoped within the try block, we need to handle errors differently
-								const images = document.querySelectorAll('.ProseMirror img.image-uploading');
-								// If there's an uploading image, it's probably our placeholder that failed
-								if (images.length > 0) {
-									// Remove the last uploading image which should be the one that failed
-									images[images.length - 1].remove();
-								}
-							}
-						};
-						fileInput.click();
-					}}
-				>
-					Image
-				</button>
+				<button onmousedown={handleImageFileInput}> Image </button>
 
 				<!-- Divider -->
 				<span class="mx-2 inline-block"></span>
