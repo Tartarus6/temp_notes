@@ -1,26 +1,28 @@
-node_modules
+# Database files
+notes.db
 
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
+# Node modules
+node_modules/
+
+# Build directories
 /build
+/.svelte-kit
+/package
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Env
+# Environment variables
 .env
 .env.*
 !.env.example
-!.env.test
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+# OS-specific files
+.DS_Store
+Thumbs.db
 
-# Claude (Very expensive way to fix bugs)
-CLAUDE.md
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
