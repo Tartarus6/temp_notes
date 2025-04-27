@@ -91,3 +91,11 @@ ul[data-type='taskList'] {
 		margin: 0;
 	}
 }
+
+img {
+	border: 0.2em solid transparent;
+}
+img.ProseMirror-selectednode {
+	/* This is the selected image */
+	border: 0.2em solid var(--color-slate-500);
+}
