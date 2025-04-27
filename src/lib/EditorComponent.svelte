@@ -158,6 +158,11 @@
 		event.preventDefault();
 		event.stopPropagation();
 
+		editorState.editor.commands.setImage({
+			src: event.dataTransfer?.getData('text/uri-list') || '',
+			alt: 'temp'
+		});
+
 		const files = Array.from(event.clipboardData.files);
 
 		for (const file of files) {
@@ -479,7 +484,6 @@
 				bind:this={editorTitleElement}
 				spellcheck="false"
 				contenteditable="{/* TODO: set to true and make stuff work */ ''}false"
-				onkeydown={/*TODO: (e) => handleTitleKeyDown(e, editorTitleElement.innerText)*/ undefined}
 			>
 				{editorState.note?.name}
 			</h1>
