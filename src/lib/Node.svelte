@@ -23,16 +23,23 @@
 	let newName = $state(node.name);
 
 	// Context menu setup
-	const contextMenuItems: ContextMenuItem[] = getContextMenuItems();
+	let contextMenuItems: ContextMenuItem[] = getContextMenuItems();
+
+	$effect(() => {
+		// Update context menu items when node changes
+		contextMenuItems = getContextMenuItems();
+	});
 
 	function getContextMenuItems(): ContextMenuItem[] {
 		const items: ContextMenuItem[] = [];
 
 		if (node.type === 'directory') {
-			items.push({ label: 'New File', onClick: handleCreateNewFile });
-			items.push({ label: 'New Folder', onClick: handleCreateNewFolder });
-			items.push({ label: 'Rename Folder', onClick: handleRename });
-			items.push({ label: 'Delete Folder', onClick: handleDeleteFolder });
+			items.push(
+				{ label: 'New File', onClick: handleCreateNewFile },
+				{ label: 'New Folder', onClick: handleCreateNewFolder },
+				{ label: 'Rename Folder', onClick: handleRename },
+				{ label: 'Delete Folder', onClick: handleDeleteFolder }
+			);
 		} else if (node.type === 'file') {
 			items.push(
 				{ label: 'Rename', onClick: handleRename },
