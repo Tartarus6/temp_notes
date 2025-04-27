@@ -158,11 +158,6 @@
 		event.preventDefault();
 		event.stopPropagation();
 
-		editorState.editor.commands.setImage({
-			src: event.dataTransfer?.getData('text/uri-list') || '',
-			alt: 'temp'
-		});
-
 		const files = Array.from(event.clipboardData.files);
 
 		for (const file of files) {
