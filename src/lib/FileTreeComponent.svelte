@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fetchNotes } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, type FileNode, handleContextMenu } from '$lib/utils';
+	import { buildFileTree, type FileNode, handleContextMenu, handleDrop } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
 	import { fileTreeState, type ContextMenuItem } from '$lib/variables.svelte';
 	import { type NewTracking } from '$lib/Node.svelte';
@@ -16,6 +16,7 @@
 	// State management
 	let notesList: Note[] = $state([]);
 	let fileTree: FileNode[] = $state([]);
+	let isDragOver = $state(false);
 
 	// Initialize file tree
 	async function refreshFileTree() {
@@ -39,6 +40,19 @@
 
 	function handleCreateNewFolder() {
 		newTracking.isCreatingNew = 'directory';
+	}
+
+	// Drag and drop handlers
+	function handleDragOver(e: DragEvent) {
+		e.preventDefault();
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'move';
+		}
+		isDragOver = true;
+	}
+
+	function handleDragLeave() {
+		isDragOver = false;
 	}
 
 	// Watch for tree update requests
@@ -69,8 +83,14 @@
 
 		<!-- Empty space with context menu -->
 		<div
-			class="h-full w-full"
+			class="h-full w-full {isDragOver ? 'border-2 border-blue-500 bg-blue-800' : ''}"
 			oncontextmenu={(e) => handleContextMenu(e, contextMenuItems)}
+			ondragover={handleDragOver}
+			ondragleave={handleDragLeave}
+			ondrop={(e) => {
+				isDragOver = false;
+				handleDrop(e, null);
+			}}
 			role="region"
 			aria-label="File tree empty area"
 		>

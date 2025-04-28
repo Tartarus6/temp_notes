@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { removeNote, type FileNode, type FileNodeTypes, openNote } from '$lib/utils';
+	import { removeNote, type FileNode, type FileNodeTypes, openNote, handleDrop } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
 	import { contextMenuState, editorState, fileTreeState } from '$lib/variables.svelte';
 	import { type ContextMenuItem } from '$lib/variables.svelte';
@@ -7,7 +7,9 @@
 		createNote,
 		renameNote,
 		renameFolderAndUpdateFiles,
-		deleteFolderAndContainedFiles
+		deleteFolderAndContainedFiles,
+		moveFile,
+		moveFolder
 	} from '$lib/client/client';
 	import { onMount, setContext, getContext } from 'svelte';
 
@@ -34,6 +36,8 @@
 	let open = $state(false);
 	let isRenaming = $state(false);
 	let newName = $state('');
+	let isDragging = $state(false);
+	let isDragOver = $state(false);
 
 	// Context menu setup
 	let contextMenuItems: ContextMenuItem[] = getContextMenuItems();
@@ -288,6 +292,53 @@
 		}
 	}
 
+	// Drag and drop handlers
+	function handleDragStart(e: DragEvent) {
+		// Don't allow drag if we're editing or creating new items
+		if (isRenaming || isNew || newTracking.isCreatingNew) {
+			e.preventDefault();
+			return;
+		}
+
+		isDragging = true;
+
+		// Set the drag data
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData(
+				'application/json',
+				JSON.stringify({
+					type: node.type,
+					path: node.path,
+					name: node.name
+				})
+			);
+		}
+	}
+
+	function handleDragEnd() {
+		isDragging = false;
+	}
+
+	function handleDragOver(e: DragEvent) {
+		// Only directories can be drop targets
+		if (node.type !== 'directory') return;
+
+		// Prevent default to allow drop
+		e.preventDefault();
+
+		// Set the dropEffect to move
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'move';
+		}
+
+		isDragOver = true;
+	}
+
+	function handleDragLeave() {
+		isDragOver = false;
+	}
+
 	onMount(() => {
 		// Set focus on the input field if it's a new file/folder
 		if (isNew || newTracking.isCreatingNew) {
@@ -309,11 +360,20 @@
 		!open &&
 		editorState.note?.path?.startsWith(node.path + node.name + '/'))
 		? 'bg-slate-700'
-		: ''}"
+		: ''} {isDragOver ? 'border-blue-500 bg-blue-800' : ''} {isDragging ? 'opacity-50' : ''}"
 	style="padding-left: {indent}em"
 	oncontextmenu={handleContextMenu}
 	role="button"
 	tabindex="0"
+	draggable={!isRenaming && !isNew && !newTracking.isCreatingNew}
+	ondragstart={handleDragStart}
+	ondragend={handleDragEnd}
+	ondragover={handleDragOver}
+	ondragleave={handleDragLeave}
+	ondrop={(e) => {
+		isDragOver = false;
+		handleDrop(e, node);
+	}}
 >
 	<button
 		type="button"

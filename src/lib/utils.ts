@@ -1,6 +1,19 @@
 import type { Note } from '$lib/server/server';
-import { editorState, contextMenuState, type ContextMenuItem } from './variables.svelte';
-import { deleteNote, getNote, uploadImageToServer, updateNote } from './client/client';
+import {
+	editorState,
+	contextMenuState,
+	type ContextMenuItem,
+	fileTreeState
+} from './variables.svelte';
+import {
+	deleteNote,
+	getNote,
+	uploadImageToServer,
+	updateNote,
+	moveFile,
+	moveFolder,
+	fetchNotes
+} from './client/client';
 
 /**
  * Represents a node in the file system tree
@@ -204,4 +217,52 @@ export async function fileToBase64(file: File): Promise<string> {
 		reader.onload = () => resolve(reader.result as string);
 		reader.onerror = (error) => reject(error);
 	});
+}
+
+export async function handleDrop(e: DragEvent, node: null | FileNode): Promise<void> {
+	// Only directories can be drop targets
+	if (node && node.type !== 'directory') return;
+
+	console.log('notes', await fetchNotes());
+
+	e.preventDefault();
+
+	// Get the dragged data
+	if (!e.dataTransfer) return;
+
+	const data = e.dataTransfer.getData('application/json');
+	if (!data) return;
+
+	const draggedItem = JSON.parse(data) as { type: FileNodeTypes; path: string; name: string };
+
+	const targetPath = node ? node.path + node.name + '/' : '/'; // Default to '/' if node is null
+
+	if (targetPath === draggedItem.path) return;
+
+	// Don't allow drop into itself or its children
+	if (draggedItem.type === 'directory') {
+		const draggedPath = draggedItem.path + draggedItem.name + '/';
+
+		// Check if trying to drop into itself or descendant
+		if (targetPath.startsWith(draggedPath)) {
+			console.log('Cannot drop a folder into itself or its descendant');
+			return;
+		}
+
+		// Move folder
+		await moveFolder({
+			sourcePath: draggedItem.path + draggedItem.name,
+			targetPath: targetPath + draggedItem.name
+		});
+	} else {
+		// Move file
+		await moveFile({
+			sourcePath: draggedItem.path,
+			sourceName: draggedItem.name,
+			targetPath: targetPath
+		});
+	}
+
+	// Update file tree
+	fileTreeState.isOld = true;
 }
