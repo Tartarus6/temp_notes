@@ -365,7 +365,7 @@
 					class="w-full rounded border border-blue-500 bg-slate-600 px-1 text-sm focus:outline-none"
 				/>
 			{:else}
-				<span class="opacity-65">{node.name}</span>
+				<span class="text-left opacity-65">{node.name}</span>
 			{/if}
 		</div>
 	</button>
