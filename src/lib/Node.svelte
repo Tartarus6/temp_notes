@@ -370,18 +370,14 @@
 	ondragend={handleDragEnd}
 	ondragover={handleDragOver}
 	ondragleave={handleDragLeave}
+	onkeydown={handleNodeKeydown}
+	onmousedown={HandleNodeOnmousedown}
 	ondrop={(e) => {
 		isDragOver = false;
 		handleDrop(e, node);
 	}}
 >
-	<button
-		type="button"
-		onkeydown={handleNodeKeydown}
-		onmousedown={HandleNodeOnmousedown}
-		aria-expanded={open}
-		class="flex w-full items-center py-0.5"
-	>
+	<button type="button" aria-expanded={open} class="flex w-full items-center py-0.5">
 		{#if node.type === 'directory'}
 			<!-- Directory node -->
 			<!-- Folder toggle icon -->
