@@ -241,17 +241,11 @@
 		scrollbar-color: var(--color-slate-500) transparent;
 	}
 
-	:global(*::-webkit-scrollbar) {
-		width: 8px;
-		height: 8px;
-	}
-
 	:global(*::-webkit-scrollbar-track) {
 		background: transparent;
 	}
 
 	:global(*::-webkit-scrollbar-thumb) {
 		background-color: var(--color-slate-500);
-		border-radius: 4px;
 	}
 </style>

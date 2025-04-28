@@ -306,12 +306,12 @@
 		type="button"
 		onmousedown={HandleNodeOnmousedown}
 		aria-expanded={open}
-		class="flex w-full items-center py-[2px]"
+		class="flex w-full items-center py-0.5"
 	>
 		{#if node.type === 'directory'}
 			<!-- Directory node -->
 			<!-- Folder toggle icon -->
-			<span class="flex min-w-[16px] items-center justify-center">
+			<span class="flex min-w-4 items-center justify-center">
 				<svg
 					class="transform transition-transform {open ? 'rotate-90' : ''}"
 					xmlns="http://www.w3.org/2000/svg"
@@ -325,7 +325,7 @@
 			</span>
 
 			<!-- Folder icon -->
-			<span class="flex min-w-[16px] items-center justify-center">
+			<span class="flex min-w-4 items-center justify-center">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="16"
@@ -340,10 +340,10 @@
 		{:else}
 			<!-- File node -->
 			<!-- Spacer for alignment -->
-			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>
+			<span class="flex min-w-4 items-center justify-center opacity-0"></span>
 
 			<!-- File icon -->
-			<span class="flex min-w-[16px] items-center justify-center">
+			<span class="flex min-w-4 items-center justify-center">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="16"
@@ -358,19 +358,21 @@
 			</span>
 		{/if}
 		<!-- name/rename input -->
-		{#if isRenaming || isNew}
-			<input
-				bind:this={nameInput}
-				id="rename-file-{node.path.replace(/\//g, '-')}"
-				type="text"
-				bind:value={newName}
-				onkeydown={handleNameKeydown}
-				onblur={cancelName}
-				class="ml-1 w-full rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
-			/>
-		{:else}
-			<span class="ml-1 opacity-65">{node.name}</span>
-		{/if}
+		<div class="flex w-full pr-4 pl-2">
+			{#if isRenaming || isNew}
+				<input
+					bind:this={nameInput}
+					id="rename-file-{node.path.replace(/\//g, '-')}"
+					type="text"
+					bind:value={newName}
+					onkeydown={handleNameKeydown}
+					onblur={cancelName}
+					class="w-full rounded border border-blue-500 bg-slate-600 px-1 text-sm focus:outline-none"
+				/>
+			{:else}
+				<span class="opacity-65">{node.name}</span>
+			{/if}
+		</div>
 	</button>
 </div>
 
