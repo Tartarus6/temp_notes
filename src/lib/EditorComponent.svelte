@@ -27,6 +27,7 @@
 
 	// Functional extensions
 	import History from '@tiptap/extension-history';
+	import Link from '@tiptap/extension-link';
 
 	// App imports
 	import { editorState } from '$lib/variables.svelte';
@@ -279,6 +280,14 @@
 						class: 'max-w-full rounded-md'
 					}
 				}),
+				Link.configure({
+					openOnClick: false,
+					HTMLAttributes: {
+						class: 'text-blue-400 underline hover:text-blue-300',
+						rel: 'noopener noreferrer',
+						target: '_blank'
+					}
+				}),
 				History
 			],
 			content: editorState.note?.content || '<p>Hello World!</p>',
@@ -401,6 +410,18 @@
 
 				<!-- Image insert button -->
 				<button onmousedown={handleImageFileInput}> Image </button>
+
+				<!-- Link button -->
+				<button 
+					onmousedown={() => {
+						const url = prompt('URL');
+						if (url && editorState.editor) {
+							editorState.editor.chain().focus().setLink({ href: url }).run();
+						}
+					}}
+				>
+					Link
+				</button>
 
 				<!-- Divider -->
 				<span class="mx-2 inline-block"></span>
