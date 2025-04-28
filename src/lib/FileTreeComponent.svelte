@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fetchNotes, createNote } from '$lib/client/client';
+	import { fetchNotes } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
 	import { buildFileTree, type FileNode, handleContextMenu } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
