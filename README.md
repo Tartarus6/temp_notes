@@ -2,6 +2,8 @@
 
 A modern note-taking application built with SvelteKit, TailwindCSS, and TipTap, featuring a SQLite database for storage.
 
+_Feel free to update this README as we add new features!!_
+
 ## Features Overview
 
 - Rich text editing with TipTap
