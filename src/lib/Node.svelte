@@ -82,7 +82,6 @@
 
 	// File operations
 	function handleCreateNewFile() {
-		console.log('Creating new file', newTracking.isCreatingNew === 'file');
 		if (!open) toggleOpen();
 		newTracking.isCreatingNew = 'file';
 	}
@@ -103,7 +102,6 @@
 	// Keyboard event handlers
 	function handleNameKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
-			console.log('newName', newName);
 			if (isRenaming && newName !== node.name) {
 				saveRename();
 			} else if (isNew && node.type === 'file') {
@@ -178,7 +176,6 @@
 			fileTreeState.isOld = true;
 			if (parentNewTracking) {
 				parentNewTracking.isCreatingNew = null;
-				console.log('cancelling', newTracking.isCreatingNew, parentNewTracking.isCreatingNew);
 			}
 			newName = '';
 		}
@@ -187,7 +184,6 @@
 	async function saveNewFile() {
 		try {
 			const filePath = node.type === 'directory' ? node.path + node.name + '/' : node.path;
-			console.log('new file', filePath, newName);
 
 			const note = await createNote({
 				path: filePath,

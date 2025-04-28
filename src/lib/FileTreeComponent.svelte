@@ -98,7 +98,7 @@
 <div class="flex h-full w-64 flex-col overflow-x-scroll bg-slate-800">
 	<!-- Header -->
 	<div class="flex items-center justify-between px-2 py-1">
-		<span class="font-bold">TempNotes {fileTreeState.isOld}</span>
+		<span class="font-bold">TempNotes</span>
 	</div>
 
 	<!-- File tree content -->
