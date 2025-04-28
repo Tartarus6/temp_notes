@@ -17,35 +17,26 @@
 		indent?: number;
 		isNew?: boolean;
 	}
+	let { node, indent = 0, isNew }: Props = $props();
 
+	// Context management
 	export interface NewTracking {
 		isCreatingNew: null | FileNodeTypes;
 	}
-
-	let { node, indent = 0, isNew }: Props = $props();
-
 	let newTracking: NewTracking = $state({
 		isCreatingNew: null
 	});
-
 	let parentNewTracking: undefined | NewTracking = getContext('newTracking');
-
 	setContext('newTracking', newTracking);
 
-	let nameInput: HTMLInputElement | null = $state(null);
-
 	// State
+	let nameInput: HTMLInputElement | null = $state(null);
 	let open = $state(false);
 	let isRenaming = $state(false);
 	let newName = $state('');
 
 	// Context menu setup
 	let contextMenuItems: ContextMenuItem[] = getContextMenuItems();
-
-	$effect(() => {
-		// Update context menu items when node changes
-		contextMenuItems = getContextMenuItems();
-	});
 
 	function getContextMenuItems(): ContextMenuItem[] {
 		const items: ContextMenuItem[] = [];
@@ -288,6 +279,11 @@
 		if (isNew || newTracking.isCreatingNew) {
 			focusInput();
 		}
+	});
+
+	$effect(() => {
+		// Update context menu items when node changes
+		contextMenuItems = getContextMenuItems();
 	});
 </script>
 
