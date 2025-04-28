@@ -118,7 +118,43 @@
 		}
 	}
 
-	// Keyboard event handlers
+	// Event handlers
+	function HandleNodeOnmousedown(e: MouseEvent) {
+		if (isRenaming || isNew || newTracking.isCreatingNew) return;
+
+		if (node.type === 'directory') {
+			if (e.button === 2) {
+				handleContextMenu(e);
+			} else if (e.button === 0) {
+				toggleOpen();
+			}
+		} else if (node.type === 'file') {
+			if (e.button === 2) {
+				handleContextMenu(e);
+			} else if (e.button === 0) {
+				openNote({ name: node.name, path: node.path });
+			}
+		}
+	}
+
+	function handleNodeKeydown(e: KeyboardEvent) {
+		if (isNew || isRenaming) return;
+
+		if (e.key === 'Enter') {
+			if (node.type === 'file') {
+				openNote(node);
+			} else if (node.type === 'directory') {
+				toggleOpen();
+			}
+		} else if (e.key === 'Delete') {
+			if (node.type === 'file') {
+				handleDeleteFile();
+			} else if (node.type === 'directory') {
+				handleDeleteFolder();
+			}
+		}
+	}
+
 	function handleNameKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			if (isRenaming && newName !== node.name) {
@@ -245,24 +281,6 @@
 		}
 	}
 
-	function HandleNodeOnmousedown(e: MouseEvent) {
-		if (isRenaming || isNew || newTracking.isCreatingNew) return;
-
-		if (node.type === 'directory') {
-			if (e.button === 2) {
-				handleContextMenu(e);
-			} else if (e.button === 0) {
-				toggleOpen();
-			}
-		} else if (node.type === 'file') {
-			if (e.button === 2) {
-				handleContextMenu(e);
-			} else if (e.button === 0) {
-				openNote({ name: node.name, path: node.path });
-			}
-		}
-	}
-
 	function focusInput() {
 		if (nameInput) {
 			nameInput.focus();
@@ -284,8 +302,8 @@
 </script>
 
 <div
-	class="relative flex items-center text-sm select-none hover:bg-slate-600 {(editorState.note
-		?.name === node.name &&
+	class="relative flex items-center border-2 border-transparent text-sm select-none focus-within:border-slate-400 {(editorState
+		.note?.name === node.name &&
 		editorState.note?.path === node.path) ||
 	(node.type === 'directory' &&
 		!open &&
@@ -299,6 +317,7 @@
 >
 	<button
 		type="button"
+		onkeydown={handleNodeKeydown}
 		onmousedown={HandleNodeOnmousedown}
 		aria-expanded={open}
 		class="flex w-full items-center py-0.5"
