@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { fetchNotes, createNote } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, type FileNode, handleContextMenu } from './utils';
-	import Node from './Node.svelte';
-	import { fileTreeState, type ContextMenuItem } from './variables.svelte';
-	import { type NewTracking } from './Node.svelte';
+	import { buildFileTree, type FileNode, handleContextMenu } from '$lib/utils';
+	import Node from '$lib/Node.svelte';
+	import { fileTreeState, type ContextMenuItem } from '$lib/variables.svelte';
+	import { type NewTracking } from '$lib/Node.svelte';
 	import { setContext } from 'svelte';
 
 	// Context management

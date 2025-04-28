@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { contextMenuState } from './variables.svelte';
+	import { contextMenuState } from '$lib/variables.svelte';
 
 	function handleClickOutside(e: MouseEvent) {
 		const target = e.target as HTMLElement;

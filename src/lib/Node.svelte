@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { removeNote, type FileNode, type FileNodeTypes, openNote } from './utils';
+	import { removeNote, type FileNode, type FileNodeTypes, openNote } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
-	import { contextMenuState, fileTreeState } from './variables.svelte';
-	import { type ContextMenuItem } from './variables.svelte';
+	import { contextMenuState, fileTreeState } from '$lib/variables.svelte';
+	import { type ContextMenuItem } from '$lib/variables.svelte';
 	import {
 		createNote,
 		renameNote,
 		renameFolderAndUpdateFiles,
 		deleteFolderAndContainedFiles
-	} from './client/client';
+	} from '$lib/client/client';
 	import { onMount, setContext, getContext } from 'svelte';
 
 	// Props
