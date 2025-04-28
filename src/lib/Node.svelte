@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { removeNote, type FileNode, type FileNodeTypes, openNote } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
-	import { contextMenuState, fileTreeState } from '$lib/variables.svelte';
+	import { contextMenuState, editorState, fileTreeState } from '$lib/variables.svelte';
 	import { type ContextMenuItem } from '$lib/variables.svelte';
 	import {
 		createNote,
@@ -284,7 +284,14 @@
 </script>
 
 <div
-	class="relative flex items-center text-sm select-none hover:bg-slate-700"
+	class="relative flex items-center text-sm select-none hover:bg-slate-600 {(editorState.note
+		?.name === node.name &&
+		editorState.note?.path === node.path) ||
+	(node.type === 'directory' &&
+		!open &&
+		editorState.note?.path?.startsWith(node.path + node.name + '/'))
+		? 'bg-slate-700'
+		: ''}"
 	style="padding-left: {indent}em"
 	oncontextmenu={handleContextMenu}
 	role="button"
