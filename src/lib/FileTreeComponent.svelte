@@ -21,8 +21,6 @@
 	let isCreatingNew = $state(false);
 	let isCreatingNewFile = $state(false);
 	let isCreatingNewFolder = $state(false);
-	let newFileName = $state('');
-	let newFolderName = $state('');
 
 	// Initialize file tree
 	async function refreshFileTree() {
@@ -86,75 +84,6 @@
 			const element = document.getElementById(id);
 			if (element) (element as HTMLInputElement).focus();
 		}, 0);
-	}
-
-	// Keyboard event handlers for new file/folder creation
-	function handleNewFileKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			if (newFileName.trim()) {
-				saveNewFile();
-			}
-		} else if (e.key === 'Escape') {
-			cancelNewFile();
-		}
-	}
-
-	function handleNewFolderKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			if (newFolderName.trim()) {
-				saveNewFolder();
-			}
-		} else if (e.key === 'Escape') {
-			cancelNewFolder();
-		}
-	}
-
-	// Save and cancel operations
-	async function saveNewFile() {
-		try {
-			const note = await createNote({
-				path: '/',
-				name: newFileName
-			});
-
-			if (note) {
-				isCreatingNewFile = false;
-				newFileName = '';
-				fileTreeState.isOld = true;
-			}
-		} catch (error) {
-			console.error('Error creating file:', error);
-		}
-	}
-
-	function cancelNewFile() {
-		isCreatingNewFile = false;
-		newFileName = '';
-	}
-
-	async function saveNewFolder() {
-		try {
-			// Create a placeholder file to establish the folder
-			const placeholderFileName = `.${newFolderName}.folder`;
-
-			const note = await createNote({
-				path: `/${newFolderName}/`,
-				name: placeholderFileName
-			});
-
-			if (note) {
-				isCreatingNewFolder = false;
-				newFolderName = '';
-				fileTreeState.isOld = true;
-			}
-		} catch (error) {
-			console.error('Error creating folder:', error);
-		}
-	}
-
-	function cancelNewFolder() {
-		isCreatingNewFolder = false;
-		newFolderName = '';
 	}
 
 	// Watch for tree update requests
