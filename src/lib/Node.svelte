@@ -71,6 +71,14 @@
 		contextMenuState.items = contextMenuItems;
 	}
 
+	function handleRename() {
+		isRenaming = true;
+		newName = node.name;
+		requestAnimationFrame(() => {
+			focusInput();
+		});
+	}
+
 	// File operations
 	function handleCreateNewFile() {
 		if (!open) toggleOpen();
@@ -82,12 +90,32 @@
 		newTracking.isCreatingNew = 'directory';
 	}
 
-	function handleRename() {
-		isRenaming = true;
-		newName = node.name;
-		requestAnimationFrame(() => {
-			focusInput();
-		});
+	function handleDeleteFile() {
+		if (!confirm(`Are you sure you want to delete ${node.name}?`)) return;
+
+		try {
+			removeNote({ name: node.name, path: node.path });
+
+			fileTreeState.isOld = true; // Force a rerender of the file tree
+		} catch (error) {
+			console.error('Error deleting file:', error);
+		}
+	}
+
+	async function handleDeleteFolder() {
+		if (!confirm(`Are you sure you want to delete the folder "${node.name}" and ALL its contents?`))
+			return;
+
+		try {
+			const folderPath = node.path + node.name + '/';
+			const result = await deleteFolderAndContainedFiles(folderPath);
+
+			if (result) {
+				fileTreeState.isOld = true; // Force a rerender of the file tree
+			}
+		} catch (error) {
+			console.error('Error deleting folder:', error);
+		}
 	}
 
 	// Keyboard event handlers
@@ -120,7 +148,19 @@
 				});
 
 				if (result) {
-					updateCurrentNoteReference();
+					const currentNote = localStorage.getItem('current-note');
+					if (!currentNote) return;
+
+					const parsedNote = JSON.parse(currentNote);
+					if (parsedNote.name === node.name && parsedNote.path === node.path) {
+						localStorage.setItem(
+							'current-note',
+							JSON.stringify({
+								name: newName,
+								path: node.path
+							})
+						);
+					}
 					openNote({ name: newName, path: node.path });
 				}
 			} else if (node.type === 'directory') {
@@ -140,35 +180,6 @@
 		} catch (error) {
 			console.error('Error renaming:', error);
 			cancelName();
-		}
-	}
-
-	function updateCurrentNoteReference() {
-		const currentNote = localStorage.getItem('current-note');
-		if (!currentNote) return;
-
-		const parsedNote = JSON.parse(currentNote);
-		if (parsedNote.name === node.name && parsedNote.path === node.path) {
-			localStorage.setItem(
-				'current-note',
-				JSON.stringify({
-					name: newName,
-					path: node.path
-				})
-			);
-		}
-	}
-
-	function cancelName() {
-		if (isRenaming) {
-			isRenaming = false;
-			newName = node.name;
-		} else if (isNew) {
-			fileTreeState.isOld = true;
-			if (parentNewTracking) {
-				parentNewTracking.isCreatingNew = null;
-			}
-			newName = '';
 		}
 	}
 
@@ -221,31 +232,16 @@
 		cancelName();
 	}
 
-	function handleDeleteFile() {
-		if (!confirm(`Are you sure you want to delete ${node.name}?`)) return;
-
-		try {
-			removeNote({ name: node.name, path: node.path });
-
-			fileTreeState.isOld = true; // Force a rerender of the file tree
-		} catch (error) {
-			console.error('Error deleting file:', error);
-		}
-	}
-
-	async function handleDeleteFolder() {
-		if (!confirm(`Are you sure you want to delete the folder "${node.name}" and ALL its contents?`))
-			return;
-
-		try {
-			const folderPath = node.path + node.name + '/';
-			const result = await deleteFolderAndContainedFiles(folderPath);
-
-			if (result) {
-				fileTreeState.isOld = true; // Force a rerender of the file tree
+	function cancelName() {
+		if (isRenaming) {
+			isRenaming = false;
+			newName = node.name;
+		} else if (isNew) {
+			fileTreeState.isOld = true;
+			if (parentNewTracking) {
+				parentNewTracking.isCreatingNew = null;
 			}
-		} catch (error) {
-			console.error('Error deleting folder:', error);
+			newName = '';
 		}
 	}
 
