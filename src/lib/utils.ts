@@ -8,10 +8,12 @@ import { deleteNote, getNote, uploadImageToServer, updateNote } from './client/c
 export type FileNode = {
 	name: string;
 	path: string;
-	type: 'file' | 'directory';
+	type: FileNodeTypes;
 	children?: FileNode[];
 	note?: Note;
 };
+
+export type FileNodeTypes = 'file' | 'directory';
 
 /**
  * Builds a file tree structure from a list of notes

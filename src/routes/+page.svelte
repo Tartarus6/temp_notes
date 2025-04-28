@@ -3,6 +3,7 @@
 	import EditorComponent from '$lib/EditorComponent.svelte';
 	import FileTreeComponent from '$lib/FileTreeComponent.svelte';
 	import { openNote } from '$lib/utils';
+	import Test from '$lib/Test.svelte';
 
 	/**
 	 * Restore the previously opened note from local storage
@@ -27,6 +28,8 @@
 
 	onMount(restoreLastOpenedNote);
 </script>
+
+<Test count={0} />
 
 <div class="grid h-screen grid-flow-row grid-cols-[auto_1fr]">
 	<FileTreeComponent />

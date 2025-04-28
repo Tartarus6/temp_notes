@@ -126,6 +126,8 @@ export async function deleteFolderAndContainedFiles(folderPath: string) {
 	// Get all notes
 	const notes = await fetchNotes();
 
+	console.log('Notes:', notes);
+
 	// Find all notes that are within the folder path
 	const affectedNotes = notes.filter((note) => (note.path + note.name).startsWith(folderPath));
 
@@ -137,6 +139,7 @@ export async function deleteFolderAndContainedFiles(folderPath: string) {
 
 	// Delete each affected note
 	for (const note of affectedNotes) {
+		console.log('Deleting note:', note);
 		await trpc.noteDelete.mutate({
 			path: note.path,
 			name: note.name

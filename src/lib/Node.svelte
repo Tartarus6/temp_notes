@@ -1,26 +1,43 @@
 <script lang="ts">
-	import { removeNote, type FileNode, openNote } from './utils';
+	import { removeNote, type FileNode, type FileNodeTypes, openNote } from './utils';
 	import Node from '$lib/Node.svelte';
 	import { contextMenuState, fileTreeState } from './variables.svelte';
 	import { type ContextMenuItem } from './variables.svelte';
-	import { createNote, renameNote, renameFolderAndUpdateFiles } from './client/client';
+	import {
+		createNote,
+		renameNote,
+		renameFolderAndUpdateFiles,
+		deleteFolderAndContainedFiles
+	} from './client/client';
+	import { onMount, setContext, getContext } from 'svelte';
 
 	// Props
 	interface Props {
 		node: FileNode;
 		indent?: number;
+		isNew?: boolean;
 	}
 
-	let { node, indent = 0 }: Props = $props();
+	export interface NewTracking {
+		isCreatingNew: null | FileNodeTypes;
+	}
+
+	let { node, indent = 0, isNew }: Props = $props();
+
+	let newTracking: NewTracking = $state({
+		isCreatingNew: null
+	});
+
+	let parentNewTracking: undefined | NewTracking = getContext('newTracking');
+
+	setContext('newTracking', newTracking);
+
+	let nameInput: HTMLInputElement | null = $state(null);
 
 	// State
 	let open = $state(false);
-	let isCreatingNewFile = $state(false);
-	let isCreatingNewFolder = $state(false);
 	let isRenaming = $state(false);
-	let newFileName = $state('');
-	let newFolderName = $state('');
-	let newName = $state(node.name);
+	let newName = $state('');
 
 	// Context menu setup
 	let contextMenuItems: ContextMenuItem[] = getContextMenuItems();
@@ -63,70 +80,41 @@
 		contextMenuState.items = contextMenuItems;
 	}
 
-	function focusElement(id: string) {
-		setTimeout(() => {
-			const element = document.getElementById(id);
-			if (element) (element as HTMLInputElement).focus();
-		}, 0);
-	}
-
 	// File operations
 	function handleCreateNewFile() {
+		console.log('Creating new file', newTracking.isCreatingNew === 'file');
 		if (!open) toggleOpen();
-		isCreatingNewFile = true;
-
-		const inputId = `new-file-${node.path.replace(/\//g, '-')}`;
-		focusElement(inputId);
+		newTracking.isCreatingNew = 'file';
 	}
 
 	function handleCreateNewFolder() {
 		if (!open) toggleOpen();
-		isCreatingNewFolder = true;
-
-		const inputId = `new-folder-${node.path.replace(/\//g, '-')}`;
-		focusElement(inputId);
+		newTracking.isCreatingNew = 'directory';
 	}
 
 	function handleRename() {
 		isRenaming = true;
 		newName = node.name;
-
-		const inputId = `rename-file-${node.path.replace(/\//g, '-')}`;
-		focusElement(inputId);
+		requestAnimationFrame(() => {
+			focusInput();
+		});
 	}
 
 	// Keyboard event handlers
-	function handleRenameKeydown(e: KeyboardEvent) {
+	function handleNameKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
-			if (newName.trim() && newName !== node.name) {
+			console.log('newName', newName);
+			if (isRenaming && newName !== node.name) {
 				saveRename();
-			} else {
-				cancelRename();
-			}
-		} else if (e.key === 'Escape') {
-			cancelRename();
-		}
-	}
-
-	function handleNewFileKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			if (newFileName.trim()) {
+			} else if (isNew && node.type === 'file') {
 				saveNewFile();
-			}
-		} else if (e.key === 'Escape') {
-			cancelNewFile();
-		}
-	}
-
-	function handleNewFolderKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			console.log('Enter pressed');
-			if (newFolderName.trim()) {
-				console.log('saving new folder');
+			} else if (isNew && node.type === 'directory') {
 				saveNewFolder();
+			} else {
+				cancelName();
 			}
 		} else if (e.key === 'Escape') {
-			cancelNewFolder();
+			cancelName();
 		}
 	}
 
@@ -162,7 +150,7 @@
 			}
 		} catch (error) {
 			console.error('Error renaming:', error);
-			cancelRename();
+			cancelName();
 		}
 	}
 
@@ -182,62 +170,68 @@
 		}
 	}
 
-	function cancelRename() {
-		isRenaming = false;
-		newName = node.name;
+	function cancelName() {
+		if (isRenaming) {
+			isRenaming = false;
+			newName = node.name;
+		} else if (isNew) {
+			fileTreeState.isOld = true;
+			if (parentNewTracking) {
+				parentNewTracking.isCreatingNew = null;
+				console.log('cancelling', newTracking.isCreatingNew, parentNewTracking.isCreatingNew);
+			}
+			newName = '';
+		}
 	}
 
 	async function saveNewFile() {
 		try {
 			const filePath = node.type === 'directory' ? node.path + node.name + '/' : node.path;
+			console.log('new file', filePath, newName);
 
 			const note = await createNote({
 				path: filePath,
-				name: newFileName
+				name: newName
 			});
 
 			if (note) {
-				isCreatingNewFile = false;
-				newFileName = '';
+				if (parentNewTracking) {
+					parentNewTracking.isCreatingNew = null;
+				}
+				newName = '';
 				fileTreeState.isOld = true;
 			}
 		} catch (error) {
 			console.error('Error creating file:', error);
 		}
-	}
-
-	function cancelNewFile() {
-		isCreatingNewFile = false;
-		newFileName = '';
+		cancelName();
 	}
 
 	async function saveNewFolder() {
 		try {
 			// Create the folder path - folders in this app are represented by their path
-			const folderPath = node.type === 'directory' ? node.path + node.name + '/' : node.path;
+			const folderPath = node.type === 'directory' ? node.path : node.path;
 
 			// Create a placeholder file to establish the folder
 			// The placeholder will have .folder extension to distinguish it
-			const placeholderFileName = `.${newFolderName}.folder`;
+			const placeholderFileName = `.${newName}.folder`;
 
 			const note = await createNote({
-				path: folderPath + newFolderName + '/',
+				path: folderPath + newName + '/',
 				name: placeholderFileName
 			});
 
 			if (note) {
-				isCreatingNewFolder = false;
-				newFolderName = '';
+				if (parentNewTracking) {
+					parentNewTracking.isCreatingNew = null;
+				}
+				newName = '';
 				fileTreeState.isOld = true;
 			}
 		} catch (error) {
 			console.error('Error creating folder:', error);
 		}
-	}
-
-	function cancelNewFolder() {
-		isCreatingNewFolder = false;
-		newFolderName = '';
+		cancelName();
 	}
 
 	function handleDeleteFile() {
@@ -252,23 +246,53 @@
 		}
 	}
 
-	function handleDeleteFolder() {
+	async function handleDeleteFolder() {
 		if (!confirm(`Are you sure you want to delete the folder "${node.name}" and ALL its contents?`))
 			return;
 
 		try {
 			const folderPath = node.path + node.name + '/';
-			import('./client/client').then(async ({ deleteFolderAndContainedFiles }) => {
-				const result = await deleteFolderAndContainedFiles(folderPath);
+			const result = await deleteFolderAndContainedFiles(folderPath);
 
-				if (result) {
-					fileTreeState.isOld = true; // Force a rerender of the file tree
-				}
-			});
+			if (result) {
+				fileTreeState.isOld = true; // Force a rerender of the file tree
+			}
 		} catch (error) {
 			console.error('Error deleting folder:', error);
 		}
 	}
+
+	function HandleNodeOnmousedown(e: MouseEvent) {
+		if (isRenaming || isNew || newTracking.isCreatingNew) return;
+
+		if (node.type === 'directory') {
+			if (e.button === 2) {
+				handleContextMenu(e);
+			} else if (e.button === 0) {
+				toggleOpen();
+			}
+		} else if (node.type === 'file') {
+			if (e.button === 2) {
+				handleContextMenu(e);
+			} else if (e.button === 0) {
+				openNote({ name: node.name, path: node.path });
+			}
+		}
+	}
+
+	function focusInput() {
+		if (nameInput) {
+			nameInput.focus();
+			nameInput.select();
+		}
+	}
+
+	onMount(() => {
+		// Set focus on the input field if it's a new file/folder
+		if (isNew || newTracking.isCreatingNew) {
+			focusInput();
+		}
+	});
 </script>
 
 <div
@@ -278,15 +302,14 @@
 	role="button"
 	tabindex="0"
 >
-	{#if node.type === 'directory'}
-		<!-- Directory node -->
-		<button
-			type="button"
-			onmousedown={(e) => e.button !== 2 && toggleOpen()}
-			onkeydown={(e) => e.key === 'Enter' && toggleOpen()}
-			aria-expanded={open}
-			class="flex w-full items-center py-[2px]"
-		>
+	<button
+		type="button"
+		onmousedown={HandleNodeOnmousedown}
+		aria-expanded={open}
+		class="flex w-full items-center py-[2px]"
+	>
+		{#if node.type === 'directory'}
+			<!-- Directory node -->
 			<!-- Folder toggle icon -->
 			<span class="flex min-w-[16px] items-center justify-center">
 				<svg
@@ -314,28 +337,8 @@
 					<path d="M2 2v12h12V4H8L6 2H2z" />
 				</svg>
 			</span>
-
-			<!-- Folder name/rename input -->
-			{#if isRenaming}
-				<input
-					id="rename-file-{node.path.replace(/\//g, '-')}"
-					type="text"
-					bind:value={newName}
-					onkeydown={handleRenameKeydown}
-					onblur={cancelRename}
-					class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
-				/>
-			{:else}
-				<span class="ml-1 opacity-65">{node.name}</span>
-			{/if}
-		</button>
-	{:else}
-		<!-- File node -->
-		<button
-			class="flex w-full items-center py-[2px]"
-			onmousedown={(e) =>
-				!isRenaming && e.button !== 2 && openNote({ name: node.name, path: node.path })}
-		>
+		{:else}
+			<!-- File node -->
 			<!-- Spacer for alignment -->
 			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>
 
@@ -353,22 +356,22 @@
 					/>
 				</svg>
 			</span>
-
-			<!-- File name/rename input -->
-			{#if isRenaming}
-				<input
-					id="rename-file-{node.path.replace(/\//g, '-')}"
-					type="text"
-					bind:value={newName}
-					onkeydown={handleRenameKeydown}
-					onblur={cancelRename}
-					class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
-				/>
-			{:else}
-				<span class="ml-1">{node.name}</span>
-			{/if}
-		</button>
-	{/if}
+		{/if}
+		<!-- name/rename input -->
+		{#if isRenaming || isNew}
+			<input
+				bind:this={nameInput}
+				id="rename-file-{node.path.replace(/\//g, '-')}"
+				type="text"
+				bind:value={newName}
+				onkeydown={handleNameKeydown}
+				onblur={cancelName}
+				class="ml-1 w-full rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
+			/>
+		{:else}
+			<span class="ml-1 opacity-65">{node.name}</span>
+		{/if}
+	</button>
 </div>
 
 <!-- Child nodes (if directory is open) -->
@@ -379,60 +382,13 @@
 		{/if}
 	{/each}
 
-	<!-- New file input (if creating new file) -->
-	{#if isCreatingNewFile}
-		<div class="flex items-center" style="padding-left: {indent + 1}em">
-			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>
-			<span class="flex min-w-[16px] items-center justify-center">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 16 16"
-					fill="#519aba"
-				>
-					<path
-						d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 5h-3V2l3 3zM3 14V2h6v3.5l.5.5H13v8H3z"
-					/>
-				</svg>
-			</span>
-			<input
-				id="new-file-{node.path.replace(/\//g, '-')}"
-				type="text"
-				bind:value={newFileName}
-				placeholder="new-file.md"
-				onkeydown={handleNewFileKeydown}
-				onblur={cancelNewFile}
-				class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
-			/>
-		</div>
-	{/if}
-
-	<!-- New folder input (if creating new folder) -->
-	{#if isCreatingNewFolder}
-		<div class="flex items-center" style="padding-left: {indent + 1}em">
-			<span class="flex min-w-[16px] items-center justify-center opacity-0"></span>
-			<span class="flex min-w-[16px] items-center justify-center">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 16 16"
-					fill="#519aba"
-				>
-					<path d="M2 2v12h12V4H8L6 2H2z" />
-				</svg>
-			</span>
-			<input
-				id="new-folder-{node.path.replace(/\//g, '-')}"
-				type="text"
-				bind:value={newFolderName}
-				placeholder="new-folder"
-				onkeydown={handleNewFolderKeydown}
-				onblur={cancelNewFolder}
-				class="ml-1 w-32 rounded border border-blue-500 bg-slate-600 px-1 py-[1px] text-sm focus:outline-none"
-			/>
-		</div>
+	<!-- New input (if creating new file) -->
+	{#if newTracking.isCreatingNew}
+		<Node
+			node={{ name: '', path: node.path + node.name + '/', type: newTracking.isCreatingNew }}
+			isNew={true}
+			indent={indent + 1}
+		/>
 	{/if}
 {/if}
 
