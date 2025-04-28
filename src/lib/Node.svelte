@@ -353,7 +353,7 @@
 </script>
 
 <div
-	class="relative flex items-center border-2 border-transparent text-sm select-none focus-within:border-slate-400 {(editorState
+	class="relative flex items-center border-2 border-transparent text-sm select-none focus-within:border-slate-400 hover:bg-slate-600 {(editorState
 		.note?.name === node.name &&
 		editorState.note?.path === node.path) ||
 	(node.type === 'directory' &&
