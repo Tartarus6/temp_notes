@@ -126,6 +126,8 @@ export async function deleteFolderAndContainedFiles(folderPath: string) {
 	// Get all notes
 	const notes = await fetchNotes();
 
+	console.log('Notes:', notes);
+
 	// Find all notes that are within the folder path
 	const affectedNotes = notes.filter((note) => (note.path + note.name).startsWith(folderPath));
 
@@ -137,6 +139,7 @@ export async function deleteFolderAndContainedFiles(folderPath: string) {
 
 	// Delete each affected note
 	for (const note of affectedNotes) {
+		console.log('Deleting note:', note);
 		await trpc.noteDelete.mutate({
 			path: note.path,
 			name: note.name
@@ -167,6 +170,67 @@ export async function uploadImageToServer(input: {
 
 export async function getImageFromServer(imageId: string) {
 	return await trpc.imageGet.query(imageId);
+}
+
+/**
+ * Move a file from one location to another
+ */
+export async function moveFile(input: {
+	sourcePath: string;
+	sourceName: string;
+	targetPath: string;
+}) {
+	// Get the note content first
+	const note = (await trpc.noteByPath.query({ path: input.sourcePath, name: input.sourceName })).at(
+		0
+	);
+	if (!note) return null;
+
+	// Create a new note at the target path with same name and content
+	const newNote = await trpc.noteCreate.mutate({
+		path: input.targetPath,
+		name: input.sourceName,
+		content: note.content
+	});
+
+	// Delete the old note if new one was created successfully
+	if (newNote) {
+		await trpc.noteDelete.mutate({
+			path: input.sourcePath,
+			name: input.sourceName
+		});
+
+		// Check if this was the current note and update localStorage if needed
+		const currentNoteStr = localStorage.getItem('current-note');
+		if (currentNoteStr) {
+			const currentNote = JSON.parse(currentNoteStr);
+			if (currentNote.name === input.sourceName && currentNote.path === input.sourcePath) {
+				currentNote.path = input.targetPath;
+				localStorage.setItem('current-note', JSON.stringify(currentNote));
+
+				// Update the open note
+				const { openNote } = await import('../utils');
+				await openNote(currentNote);
+			}
+		}
+	}
+
+	return newNote;
+}
+
+/**
+ * Move a folder from one location to another
+ */
+export async function moveFolder(input: { sourcePath: string; targetPath: string }) {
+	// First make sure paths end with /
+	const sourcePath = input.sourcePath.endsWith('/') ? input.sourcePath : input.sourcePath + '/';
+	const targetPath = input.targetPath.endsWith('/') ? input.targetPath : input.targetPath + '/';
+
+	// This is essentially the same as renameFolderAndUpdateFiles
+	return renameFolderAndUpdateFiles({
+		oldPath: sourcePath,
+		newPath: targetPath
+	});
 }
 
 // Export TRPC client for direct use in other files

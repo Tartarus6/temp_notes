@@ -530,7 +530,7 @@
 	:global(.ProseMirror img.image-uploading) {
 		opacity: 0.6;
 		filter: grayscale(50%);
-		border: 2px dashed #4a90e2;
+		border: 0.1em dashed var(--color-slate-500);
 		/* Add a pulsing animation */
 		animation: pulse 1.5s infinite alternate;
 	}
