@@ -70,10 +70,6 @@
 		<span class="font-bold">TempNotes</span>
 	</div>
 
-	<button class="w-full bg-amber-400 hover:bg-amber-500" onclick={() => console.log(fetchNotes())}>
-		test button
-	</button>
-
 	<!-- File tree content -->
 	<div class="w-fit min-w-full flex-1">
 		{#each fileTree as node}
