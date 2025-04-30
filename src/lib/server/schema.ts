@@ -3,8 +3,9 @@ import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 export const notesTable = sqliteTable('notes_table', {
 	id: int().primaryKey({ autoIncrement: true }).notNull(),
 	name: text().notNull(),
-	path: text().notNull().default('/'),
-	content: text().notNull()
+	parentId: int(), // Can be null for root notes
+	content: text().notNull(),
+	isFolder: int().default(0).notNull() // 0 = false, 1 = true (SQLite doesn't have boolean)
 });
 
 export const imagesTable = sqliteTable('images_table', {

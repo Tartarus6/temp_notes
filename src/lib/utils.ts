@@ -10,70 +10,68 @@ import {
 	getNote,
 	uploadImageToServer,
 	updateNote,
-	moveFile,
-	moveFolder,
-	fetchNotes
+	moveNote,
+	getNotePath
 } from './client/client';
 
 /**
  * Represents a node in the file system tree
  */
 export type FileNode = {
+	id: number;
 	name: string;
-	path: string;
 	type: FileNodeTypes;
 	children?: FileNode[];
 	note?: Note;
+	parentId: number | null;
 };
 
-export type FileNodeTypes = 'file' | 'directory';
+export type FileNodeTypes = 'file' | 'folder';
 
 /**
  * Builds a file tree structure from a list of notes
  */
 export function buildFileTree(notes: Note[]): FileNode[] {
-	// Initialize root node and path mapping for quick lookups
-	const root: FileNode = { name: 'root', path: '', type: 'directory', children: [] };
-	const pathMap: Record<string, FileNode> = { '/': root };
+	// Create a map for quick lookups
+	const noteMap: Record<string, FileNode> = {}; // Changed from number to string for index
 
-	// Create all nodes in the tree
+	// First pass: Create all file nodes
 	for (const note of notes) {
-		// Split path into segments and build tree incrementally
-		const parts = (note.path + note.name).split('/').filter(Boolean);
-		let currentPath = '/';
-		let parent = root;
+		noteMap[note.id!] = {
+			id: note.id!,
+			name: note.name,
+			type: note.isFolder === 1 ? 'folder' : 'file',
+			children: note.isFolder === 1 ? [] : undefined,
+			note: note,
+			parentId: note.parentId!
+		};
+	}
 
-		// Process each path segment
-		for (let i = 0; i < parts.length; i++) {
-			const part = parts[i];
-			const fullPath = currentPath + part;
-			const isFile = i === parts.length - 1;
+	// Second pass: Build the tree structure
+	const rootNodes: FileNode[] = [];
 
-			// Create node if it doesn't exist
-			if (!pathMap[fullPath]) {
-				const newNode: FileNode = {
-					name: part,
-					path: currentPath,
-					type: isFile ? 'file' : 'directory',
-					children: isFile ? undefined : [],
-					note: isFile ? note : undefined
-				};
+	for (const noteId in noteMap) {
+		const node = noteMap[noteId];
 
-				// Add to path map and parent's children
-				pathMap[fullPath] = newNode;
-				parent.children?.push(newNode);
+		if (node.parentId === null) {
+			// This is a root node
+			rootNodes.push(node);
+		} else if (node.parentId !== undefined && noteMap[String(node.parentId)]) {
+			// Add as child to parent (use string key)
+			const parent = noteMap[String(node.parentId)];
+			if (parent.children) {
+				parent.children.push(node);
 			}
-
-			// Update parent and current path for next iteration
-			parent = pathMap[fullPath];
-			currentPath = fullPath + '/';
+		} else {
+			// Orphaned node (parent doesn't exist), add to root
+			rootNodes.push(node);
 		}
 	}
 
-	// Sort the tree (directories first, then alphabetically)
-	sortFileTree(root);
+	// Sort the tree (folders first, then alphabetically)
+	sortFileTree({ children: rootNodes } as FileNode);
 
-	return root.children || [];
+	return rootNodes;
 }
 
 /**
@@ -82,12 +80,12 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 function sortFileTree(node: FileNode): void {
 	if (!node.children?.length) return;
 
-	// Sort children: directories first, then alphabetically
+	// Sort children: folders first, then alphabetically
 	node.children.sort((a, b) => {
 		if (a.type === b.type) {
 			return a.name.localeCompare(b.name);
 		}
-		return a.type === 'directory' ? -1 : 1;
+		return a.type === 'folder' ? -1 : 1;
 	});
 
 	// Sort children's children recursively
@@ -97,7 +95,7 @@ function sortFileTree(node: FileNode): void {
 /**
  * Opens a note in the editor
  */
-export async function openNote(input: { path: string; name: string }): Promise<Note | null> {
+export async function openNote(input: { id: number }): Promise<Note | null> {
 	try {
 		// Save current note before opening a new one
 		await saveNote();
@@ -105,7 +103,7 @@ export async function openNote(input: { path: string; name: string }): Promise<N
 		const note = await getNote(input);
 
 		if (!note) {
-			console.warn(`Note not found: ${input.path}/${input.name}`);
+			console.warn(`Note not found with id: ${input.id}`);
 			return null;
 		}
 
@@ -118,8 +116,7 @@ export async function openNote(input: { path: string; name: string }): Promise<N
 			localStorage.setItem(
 				'current-note',
 				JSON.stringify({
-					name: note.name,
-					path: note.path
+					id: note.id
 				})
 			);
 
@@ -139,14 +136,15 @@ export async function saveNote(): Promise<Note | null> {
 	try {
 		const { editor, note } = editorState;
 
-		if (!editor || !note?.path) {
+		if (!editor || !note?.id) {
 			return null;
 		}
 
 		return await updateNote({
-			path: note.path,
+			id: note.id,
 			name: note.name,
-			content: editor.getHTML()
+			content: editor.getHTML(),
+			isFolder: note.isFolder === 1
 		});
 	} catch (error) {
 		console.error('Error saving note:', error);
@@ -157,14 +155,14 @@ export async function saveNote(): Promise<Note | null> {
 /**
  * Deletes a note and clears editor if it's currently open
  */
-export async function removeNote(input: { path: string; name: string }): Promise<boolean> {
+export async function removeNote(input: { id: number }): Promise<boolean> {
 	try {
 		await deleteNote(input);
 
 		// Clear editor if deleted note was open
 		const { editor, note } = editorState;
 
-		if (editor && note?.name === input.name && note?.path === input.path) {
+		if (editor && note?.id === input.id) {
 			editorState.note = null;
 			editor.commands.setContent('');
 			localStorage.removeItem('current-note');
@@ -219,11 +217,9 @@ export async function fileToBase64(file: File): Promise<string> {
 	});
 }
 
-export async function handleDrop(e: DragEvent, node: null | FileNode): Promise<void> {
-	// Only directories can be drop targets
-	if (node && node.type !== 'directory') return;
-
-	console.log('notes', await fetchNotes());
+export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Promise<void> {
+	// Only folders can be drop targets
+	if (targetNode && targetNode.type !== 'folder') return;
 
 	e.preventDefault();
 
@@ -233,36 +229,41 @@ export async function handleDrop(e: DragEvent, node: null | FileNode): Promise<v
 	const data = e.dataTransfer.getData('application/json');
 	if (!data) return;
 
-	const draggedItem = JSON.parse(data) as { type: FileNodeTypes; path: string; name: string };
+	const draggedItem = JSON.parse(data) as { id: number; type: FileNodeTypes };
+	const targetParentId = targetNode?.id || null; // null means root level
 
-	const targetPath = node ? node.path + node.name + '/' : '/'; // Default to '/' if node is null
+	// Don't allow drop on itself
+	if (targetNode && draggedItem.id === targetNode.id) return;
 
-	if (targetPath === draggedItem.path) return;
-
-	// Don't allow drop into itself or its children
-	if (draggedItem.type === 'directory') {
-		const draggedPath = draggedItem.path + draggedItem.name + '/';
-
-		// Check if trying to drop into itself or descendant
-		if (targetPath.startsWith(draggedPath)) {
-			console.log('Cannot drop a folder into itself or its descendant');
+	// Check circular reference (can't drop parent into its own child)
+	if (targetNode && draggedItem.type === 'folder') {
+		// If target node is a descendant of dragged item, we can't move
+		const targetAncestors = await getNodeAncestors(targetNode.id);
+		if (targetAncestors.some((ancestor) => ancestor.id === draggedItem.id)) {
+			console.log('Cannot move a folder into its own descendant');
 			return;
 		}
-
-		// Move folder
-		await moveFolder({
-			sourcePath: draggedItem.path + draggedItem.name,
-			targetPath: targetPath + draggedItem.name
-		});
-	} else {
-		// Move file
-		await moveFile({
-			sourcePath: draggedItem.path,
-			sourceName: draggedItem.name,
-			targetPath: targetPath
-		});
 	}
+
+	// Move the note to new parent
+	await moveNote({
+		id: draggedItem.id,
+		newParentId: targetParentId
+	});
 
 	// Update file tree
 	fileTreeState.isOld = true;
+}
+
+/**
+ * Gets all ancestor nodes of a given node
+ */
+export async function getNodeAncestors(nodeId: number): Promise<Note[]> {
+	const ancestors: Note[] = [];
+	const path = await getNotePath(nodeId);
+
+	// The path includes the node itself, so we remove the last element
+	return path.length > 1
+		? path.slice(0, -1).map((item) => ({ id: item.id, name: item.name }) as Note)
+		: [];
 }

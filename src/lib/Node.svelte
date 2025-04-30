@@ -6,10 +6,10 @@
 	import {
 		createNote,
 		renameNote,
-		renameFolderAndUpdateFiles,
-		deleteFolderAndContainedFiles,
-		moveFile,
-		moveFolder
+		deleteNote,
+		moveNote,
+		getNote,
+		getNotesByParentId
 	} from '$lib/client/client';
 	import { onMount, setContext, getContext } from 'svelte';
 
@@ -45,7 +45,7 @@
 	function getContextMenuItems(): ContextMenuItem[] {
 		const items: ContextMenuItem[] = [];
 
-		if (node.type === 'directory') {
+		if (node.type === 'folder') {
 			items.push(
 				{ label: 'New File', onClick: handleCreateNewFile },
 				{ label: 'New Folder', onClick: handleCreateNewFolder },
@@ -91,15 +91,14 @@
 
 	function handleCreateNewFolder() {
 		if (!open) toggleOpen();
-		newTracking.isCreatingNew = 'directory';
+		newTracking.isCreatingNew = 'folder';
 	}
 
 	function handleDeleteFile() {
 		if (!confirm(`Are you sure you want to delete ${node.name}?`)) return;
 
 		try {
-			removeNote({ name: node.name, path: node.path });
-
+			removeNote({ id: node.id });
 			fileTreeState.isOld = true; // Force a rerender of the file tree
 		} catch (error) {
 			console.error('Error deleting file:', error);
@@ -111,12 +110,9 @@
 			return;
 
 		try {
-			const folderPath = node.path + node.name + '/';
-			const result = await deleteFolderAndContainedFiles(folderPath);
-
-			if (result) {
-				fileTreeState.isOld = true; // Force a rerender of the file tree
-			}
+			// The new API automatically deletes all children
+			await deleteNote({ id: node.id });
+			fileTreeState.isOld = true; // Force a rerender of the file tree
 		} catch (error) {
 			console.error('Error deleting folder:', error);
 		}
@@ -126,7 +122,7 @@
 	function HandleNodeOnmousedown(e: MouseEvent) {
 		if (isRenaming || isNew || newTracking.isCreatingNew) return;
 
-		if (node.type === 'directory') {
+		if (node.type === 'folder') {
 			if (e.button === 2) {
 				handleContextMenu(e);
 			} else if (e.button === 0) {
@@ -136,7 +132,7 @@
 			if (e.button === 2) {
 				handleContextMenu(e);
 			} else if (e.button === 0) {
-				openNote({ name: node.name, path: node.path });
+				openNote({ id: node.id });
 			}
 		}
 	}
@@ -146,14 +142,14 @@
 
 		if (e.key === 'Enter') {
 			if (node.type === 'file') {
-				openNote(node);
-			} else if (node.type === 'directory') {
+				openNote({ id: node.id });
+			} else if (node.type === 'folder') {
 				toggleOpen();
 			}
 		} else if (e.key === 'Delete') {
 			if (node.type === 'file') {
 				handleDeleteFile();
-			} else if (node.type === 'directory') {
+			} else if (node.type === 'folder') {
 				handleDeleteFolder();
 			}
 		}
@@ -165,7 +161,7 @@
 				saveRename();
 			} else if (isNew && node.type === 'file') {
 				saveNewFile();
-			} else if (isNew && node.type === 'directory') {
+			} else if (isNew && node.type === 'folder') {
 				saveNewFolder();
 			} else {
 				cancelName();
@@ -180,40 +176,29 @@
 		try {
 			let result;
 
-			if (node.type === 'file') {
-				result = await renameNote({
-					path: node.path,
-					oldName: node.name,
-					newName: newName
-				});
+			// Both files and folders use the same renameNote function now
+			result = await renameNote({
+				id: node.id,
+				newName: newName
+			});
 
-				if (result) {
-					const currentNote = localStorage.getItem('current-note');
-					if (!currentNote) return;
-
-					const parsedNote = JSON.parse(currentNote);
-					if (parsedNote.name === node.name && parsedNote.path === node.path) {
+			if (result) {
+				// If this is the currently open note, update it
+				const currentNoteStr = localStorage.getItem('current-note');
+				if (currentNoteStr) {
+					const parsedNote = JSON.parse(currentNoteStr);
+					if (parsedNote.id === node.id) {
 						localStorage.setItem(
 							'current-note',
 							JSON.stringify({
-								name: newName,
-								path: node.path
+								id: node.id
 							})
 						);
+						// Reopen the note with the new name
+						openNote({ id: node.id });
 					}
-					openNote({ name: newName, path: node.path });
 				}
-			} else if (node.type === 'directory') {
-				const oldPath = node.path + node.name;
-				const newPath = node.path + newName;
 
-				result = await renameFolderAndUpdateFiles({
-					oldPath,
-					newPath
-				});
-			}
-
-			if (result) {
 				isRenaming = false;
 				fileTreeState.isOld = true; // Force a rerender of the file tree
 			}
@@ -225,11 +210,13 @@
 
 	async function saveNewFile() {
 		try {
-			const filePath = node.type === 'directory' ? node.path + node.name + '/' : node.path;
+			// Create note with parent ID from current node if it's a folder
+			const parentId = node.type === 'folder' ? node.id : node.parentId;
 
 			const note = await createNote({
-				path: filePath,
-				name: newName
+				name: newName,
+				parentId: parentId,
+				isFolder: false
 			});
 
 			if (note) {
@@ -247,19 +234,17 @@
 
 	async function saveNewFolder() {
 		try {
-			// Create the folder path - folders in this app are represented by their path
-			const folderPath = node.type === 'directory' ? node.path : node.path;
+			// Create folder with parent ID from current node if it's a folder
+			const parentId = node.type === 'folder' ? node.id : node.parentId;
 
-			// Create a placeholder file to establish the folder
-			// The placeholder will have .folder extension to distinguish it
-			const placeholderFileName = `.${newName}.folder`;
-
-			const note = await createNote({
-				path: folderPath + newName + '/',
-				name: placeholderFileName
+			const folder = await createNote({
+				name: newName,
+				parentId: parentId,
+				content: '',
+				isFolder: true
 			});
 
-			if (note) {
+			if (folder) {
 				if (parentNewTracking) {
 					parentNewTracking.isCreatingNew = null;
 				}
@@ -302,15 +287,14 @@
 
 		isDragging = true;
 
-		// Set the drag data
+		// Set the drag data with ID instead of path
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = 'move';
 			e.dataTransfer.setData(
 				'application/json',
 				JSON.stringify({
-					type: node.type,
-					path: node.path,
-					name: node.name
+					id: node.id,
+					type: node.type
 				})
 			);
 		}
@@ -321,8 +305,8 @@
 	}
 
 	function handleDragOver(e: DragEvent) {
-		// Only directories can be drop targets
-		if (node.type !== 'directory') return;
+		// Only folders can be drop targets
+		if (node.type !== 'folder') return;
 
 		// Prevent default to allow drop
 		e.preventDefault();
@@ -353,12 +337,8 @@
 </script>
 
 <div
-	class="relative flex items-center border-2 border-transparent text-sm select-none focus-within:border-slate-400 hover:bg-slate-600 {(editorState
-		.note?.name === node.name &&
-		editorState.note?.path === node.path) ||
-	(node.type === 'directory' &&
-		!open &&
-		editorState.note?.path?.startsWith(node.path + node.name + '/'))
+	class="relative flex items-center border-2 border-transparent text-sm select-none focus-within:border-slate-400 hover:bg-slate-600 {editorState
+		.note?.id === node.id
 		? 'bg-slate-700'
 		: ''} {isDragOver ? 'border-blue-500 bg-blue-800' : ''} {isDragging ? 'opacity-50' : ''}"
 	style="padding-left: {indent}em"
@@ -378,7 +358,7 @@
 	}}
 >
 	<button type="button" aria-expanded={open} class="flex w-full items-center py-0.5">
-		{#if node.type === 'directory'}
+		{#if node.type === 'folder'}
 			<!-- Directory node -->
 			<!-- Folder toggle icon -->
 			<span class="flex min-w-4 items-center justify-center">
@@ -432,7 +412,7 @@
 			{#if isRenaming || isNew}
 				<input
 					bind:this={nameInput}
-					id="rename-file-{node.path.replace(/\//g, '-')}"
+					id="rename-file-{node.id}"
 					type="text"
 					bind:value={newName}
 					onkeydown={handleNameKeydown}
@@ -449,15 +429,19 @@
 <!-- Child nodes (if directory is open) -->
 {#if open && node.children}
 	{#each node.children as child}
-		{#if !child.name.startsWith('.')}
-			<Node node={child} indent={indent + 1} />
-		{/if}
+		<Node node={child} indent={indent + 1} />
 	{/each}
 
 	<!-- New input (if creating new file) -->
 	{#if newTracking.isCreatingNew}
 		<Node
-			node={{ name: '', path: node.path + node.name + '/', type: newTracking.isCreatingNew }}
+			node={{
+				id: -1, // Temporary ID for new node
+				name: '',
+				parentId: node.id,
+				type: newTracking.isCreatingNew,
+				note: {} as any
+			}}
 			isNew={true}
 			indent={indent + 1}
 		/>

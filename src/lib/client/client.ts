@@ -11,153 +11,94 @@ const trpc = createTRPCProxyClient<AppRouter>({
 
 export async function fetchNotes() {
 	const notes = await trpc.noteList.query();
-
 	return await notes;
 }
 
-export async function createNote(input: { path: string; name: string }) {
+export async function createNote(input: {
+	name: string;
+	parentId: number | null;
+	content?: string;
+	isFolder?: boolean;
+}) {
 	const note = await trpc.noteCreate.mutate({
-		path: input.path,
 		name: input.name,
-		content: 'This is a new note'
+		parentId: input.parentId || undefined,
+		content: input.content || 'This is a new note',
+		isFolder: input.isFolder
 	});
 	return await note;
 }
 
-export async function deleteNote(input: { path: string; name: string }) {
+export async function deleteNote(input: { id: number }) {
 	const note = await trpc.noteDelete.mutate({
-		path: input.path,
-		name: input.name
+		id: input.id
 	});
 	return await note;
 }
 
-export async function getNote(input: { path: string; name: string }) {
-	const note = (await trpc.noteByPath.query({ path: input.path, name: input.name })).at(0);
+export async function getNote(input: { id: number }) {
+	const note = await trpc.noteById.query(input.id);
 	return await note;
 }
 
-export async function updateNote(input: { path: string; name: string; content: string }) {
+export async function getNotesByParentId(parentId?: number) {
+	return await trpc.notesByParentId.query(parentId);
+}
+
+export async function updateNote(input: {
+	id: number;
+	name: string;
+	content: string;
+	isFolder?: boolean;
+}) {
 	const note = await trpc.noteUpdate.mutate({
-		path: input.path,
+		id: input.id,
 		name: input.name,
-		content: input.content
+		content: input.content,
+		isFolder: input.isFolder
 	});
-	return await note[0];
+	return note[0];
 }
 
-export async function renameNote(input: { path: string; oldName: string; newName: string }) {
-	// Get the note content first
-	const note = (await trpc.noteByPath.query({ path: input.path, name: input.oldName })).at(0);
+export async function renameNote(input: { id: number; newName: string }) {
+	// Get the note first
+	const note = await getNote({ id: input.id });
 	if (!note) return null;
 
-	// Create a new note with the new name and the same content
-	const newNote = await trpc.noteCreate.mutate({
-		path: input.path,
+	// Update with the new name
+	return await updateNote({
+		id: input.id,
 		name: input.newName,
-		content: note.content
+		content: note.content,
+		isFolder: note.isFolder === 1
 	});
-
-	// Delete the old note
-	if (newNote) {
-		await trpc.noteDelete.mutate({
-			path: input.path,
-			name: input.oldName
-		});
-	}
-
-	return newNote;
 }
 
-//TODO: might be smart to move things like localStorage out of here, i would want that in utils
-export async function renameFolderAndUpdateFiles(input: { oldPath: string; newPath: string }) {
-	// First get all notes
-	const notes = await fetchNotes();
-
-	// Find all notes that are within the old path
-	const affectedNotes = notes.filter((note) => (note.path + note.name).startsWith(input.oldPath));
-
-	// Check if current note is affected
-	const currentNoteStr = localStorage.getItem('current-note');
-	let currentNote = currentNoteStr ? JSON.parse(currentNoteStr) : null;
-	const isCurrentNoteAffected =
-		currentNote && (currentNote.path + currentNote.name).startsWith(input.oldPath);
-
-	// Update each affected note
-	for (const note of affectedNotes) {
-		const newNotePath = note.path.replace(input.oldPath, input.newPath);
-
-		// Create new note at new path
-		const newNote = await trpc.noteCreate.mutate({
-			path: newNotePath,
-			name: note.name,
-			content: note.content
-		});
-
-		// Delete old note if new note was created successfully
-		if (newNote) {
-			await trpc.noteDelete.mutate({
-				path: note.path,
-				name: note.name
-			});
-
-			// If this was the current note, update its path in localStorage
-			if (currentNote && currentNote.name === note.name && currentNote.path === note.path) {
-				currentNote = {
-					name: note.name,
-					path: newNotePath
-				};
-			}
-		}
-	}
-
-	// If the current note was affected, update localStorage and reopen it
-	if (isCurrentNoteAffected && currentNote) {
-		localStorage.setItem('current-note', JSON.stringify(currentNote));
-		// Import and call openNote from utils
-		const { openNote } = await import('../utils');
-		await openNote(currentNote);
-	}
-
-	return affectedNotes.length > 0;
+export async function moveNote(input: { id: number; newParentId: number | null }) {
+	return await trpc.noteMove.mutate({
+		id: input.id,
+		newParentId: input.newParentId
+	});
 }
 
-export async function deleteFolderAndContainedFiles(folderPath: string) {
-	// Get all notes
-	const notes = await fetchNotes();
+export async function searchNotes(searchText: string) {
+	return await trpc.notesSearch.query(searchText);
+}
 
-	console.log('Notes:', notes);
+// Helper function to get full path to a note (might be useful for breadcrumbs or navigation)
+export async function getNotePath(noteId: number): Promise<Array<{ id: number; name: string }>> {
+	const path: Array<{ id: number; name: string }> = [];
+	let currentNote = await getNote({ id: noteId });
 
-	// Find all notes that are within the folder path
-	const affectedNotes = notes.filter((note) => (note.path + note.name).startsWith(folderPath));
+	while (currentNote) {
+		path.unshift({ id: currentNote.id, name: currentNote.name });
 
-	// Check if current note is affected
-	const currentNoteStr = localStorage.getItem('current-note');
-	let currentNote = currentNoteStr ? JSON.parse(currentNoteStr) : null;
-	const isCurrentNoteAffected =
-		currentNote && (currentNote.path + currentNote.name).startsWith(folderPath);
+		if (currentNote.parentId === null) break;
 
-	// Delete each affected note
-	for (const note of affectedNotes) {
-		console.log('Deleting note:', note);
-		await trpc.noteDelete.mutate({
-			path: note.path,
-			name: note.name
-		});
+		currentNote = await getNote({ id: currentNote.parentId });
 	}
 
-	// If the current note was affected, clear it from localStorage
-	if (isCurrentNoteAffected) {
-		localStorage.removeItem('current-note');
-		// Import editorState to clear the editor
-		const { editorState } = await import('../variables.svelte');
-		if (editorState.editor) {
-			editorState.editor.commands.setContent('');
-			editorState.note = null;
-		}
-	}
-
-	return affectedNotes.length > 0;
+	return path;
 }
 
 export async function uploadImageToServer(input: {
@@ -170,67 +111,6 @@ export async function uploadImageToServer(input: {
 
 export async function getImageFromServer(imageId: string) {
 	return await trpc.imageGet.query(imageId);
-}
-
-/**
- * Move a file from one location to another
- */
-export async function moveFile(input: {
-	sourcePath: string;
-	sourceName: string;
-	targetPath: string;
-}) {
-	// Get the note content first
-	const note = (await trpc.noteByPath.query({ path: input.sourcePath, name: input.sourceName })).at(
-		0
-	);
-	if (!note) return null;
-
-	// Create a new note at the target path with same name and content
-	const newNote = await trpc.noteCreate.mutate({
-		path: input.targetPath,
-		name: input.sourceName,
-		content: note.content
-	});
-
-	// Delete the old note if new one was created successfully
-	if (newNote) {
-		await trpc.noteDelete.mutate({
-			path: input.sourcePath,
-			name: input.sourceName
-		});
-
-		// Check if this was the current note and update localStorage if needed
-		const currentNoteStr = localStorage.getItem('current-note');
-		if (currentNoteStr) {
-			const currentNote = JSON.parse(currentNoteStr);
-			if (currentNote.name === input.sourceName && currentNote.path === input.sourcePath) {
-				currentNote.path = input.targetPath;
-				localStorage.setItem('current-note', JSON.stringify(currentNote));
-
-				// Update the open note
-				const { openNote } = await import('../utils');
-				await openNote(currentNote);
-			}
-		}
-	}
-
-	return newNote;
-}
-
-/**
- * Move a folder from one location to another
- */
-export async function moveFolder(input: { sourcePath: string; targetPath: string }) {
-	// First make sure paths end with /
-	const sourcePath = input.sourcePath.endsWith('/') ? input.sourcePath : input.sourcePath + '/';
-	const targetPath = input.targetPath.endsWith('/') ? input.targetPath : input.targetPath + '/';
-
-	// This is essentially the same as renameFolderAndUpdateFiles
-	return renameFolderAndUpdateFiles({
-		oldPath: sourcePath,
-		newPath: targetPath
-	});
 }
 
 // Export TRPC client for direct use in other files

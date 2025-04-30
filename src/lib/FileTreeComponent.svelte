@@ -39,7 +39,7 @@
 	}
 
 	function handleCreateNewFolder() {
-		newTracking.isCreatingNew = 'directory';
+		newTracking.isCreatingNew = 'folder';
 	}
 
 	// Drag and drop handlers
@@ -78,7 +78,10 @@
 
 		<!-- New input (if creating new file) -->
 		{#if newTracking.isCreatingNew}
-			<Node node={{ name: '', path: '/', type: newTracking.isCreatingNew }} isNew={true} />
+			<Node
+				node={{ id: -1, name: '', parentId: null, type: newTracking.isCreatingNew }}
+				isNew={true}
+			/>
 		{/if}
 
 		<!-- Empty space with context menu -->
