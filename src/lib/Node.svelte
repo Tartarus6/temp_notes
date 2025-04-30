@@ -210,12 +210,10 @@
 
 	async function saveNewFile() {
 		try {
-			// Create note with parent ID from current node if it's a folder
-			const parentId = node.type === 'folder' ? node.id : node.parentId;
-
+			// Create note with parent ID from current node
 			const note = await createNote({
 				name: newName,
-				parentId: parentId,
+				parentId: node.parentId,
 				isFolder: false
 			});
 
@@ -234,9 +232,10 @@
 
 	async function saveNewFolder() {
 		try {
+			// Create note with parent ID from current node
 			const folder = await createNote({
 				name: newName,
-				parentId: node.id,
+				parentId: node.parentId,
 				content: '',
 				isFolder: true
 			});
