@@ -234,12 +234,9 @@
 
 	async function saveNewFolder() {
 		try {
-			// Create folder with parent ID from current node if it's a folder
-			const parentId = node.type === 'folder' ? node.id : node.parentId;
-
 			const folder = await createNote({
 				name: newName,
-				parentId: parentId,
+				parentId: node.id,
 				content: '',
 				isFolder: true
 			});
