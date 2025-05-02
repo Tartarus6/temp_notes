@@ -47,8 +47,7 @@ const appRouter = router({
 				.values({
 					name: input.name,
 					parentId: input.parentId || null,
-					content: input.content,
-					isFolder: input.isFolder ? 1 : 0
+					content: input.content
 				})
 				.returning();
 			return note[0];
@@ -97,8 +96,7 @@ const appRouter = router({
 				.update(notesTable)
 				.set({
 					name: input.name,
-					content: input.content,
-					isFolder: input.isFolder !== undefined ? (input.isFolder ? 1 : 0) : undefined
+					content: input.content
 				})
 				.where(eq(notesTable.id, input.id))
 				.returning();

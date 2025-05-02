@@ -215,9 +215,6 @@ export async function fileToBase64(file: File): Promise<string> {
 }
 
 export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Promise<void> {
-	// Only folders can be drop targets
-	if (targetNode && targetNode.children.length !== 0) return;
-
 	e.preventDefault();
 
 	// Get the dragged data

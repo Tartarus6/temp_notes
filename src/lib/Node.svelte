@@ -1,16 +1,9 @@
 <script lang="ts">
-	import { removeNote, type FileNode, type FileNodeTypes, openNote, handleDrop } from '$lib/utils';
+	import { type FileNode, type FileNodeTypes, openNote, handleDrop, removeNote } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
 	import { contextMenuState, editorState, fileTreeState } from '$lib/variables.svelte';
 	import { type ContextMenuItem } from '$lib/variables.svelte';
-	import {
-		createNote,
-		renameNote,
-		deleteNote,
-		moveNote,
-		getNote,
-		getNotesByParentId
-	} from '$lib/client/client';
+	import { createNote, renameNote } from '$lib/client/client';
 	import { onMount, setContext, getContext } from 'svelte';
 
 	// Props
@@ -45,19 +38,11 @@
 	function getContextMenuItems(): ContextMenuItem[] {
 		const items: ContextMenuItem[] = [];
 
-		if (node.children.length !== 0) {
-			items.push(
-				{ label: 'New File', onClick: handleCreateNewFile },
-				{ label: 'New Folder', onClick: handleCreateNewFolder },
-				{ label: 'Rename Folder', onClick: handleRename },
-				{ label: 'Delete Folder', onClick: handleDeleteFile }
-			);
-		} else {
-			items.push(
-				{ label: 'Rename', onClick: handleRename },
-				{ label: 'Delete File', onClick: handleDeleteFile }
-			);
-		}
+		items.push(
+			{ label: 'New File', onClick: handleCreateNewFile },
+			{ label: 'Rename', onClick: handleRename },
+			{ label: 'Delete', onClick: handleDeleteFile }
+		);
 
 		return items;
 	}
@@ -89,18 +74,13 @@
 		newTracking.isCreatingNew = 'file';
 	}
 
-	function handleCreateNewFolder() {
-		if (!open) toggleOpen();
-		newTracking.isCreatingNew = 'folder';
-	}
-
 	async function handleDeleteFile() {
 		if (!confirm(`Are you sure you want to delete the file "${node.name}" and ALL its contents?`))
 			return;
 
 		try {
 			// The new API automatically deletes all children
-			await deleteNote({ id: node.id });
+			await removeNote({ id: node.id });
 			fileTreeState.isOld = true; // Force a rerender of the file tree
 		} catch (error) {
 			console.error('Error deleting file:', error);
@@ -111,44 +91,35 @@
 	function HandleNodeOnmousedown(e: MouseEvent) {
 		if (isRenaming || isNew || newTracking.isCreatingNew) return;
 
-		if (node.children.length !== 0) {
-			if (e.button === 2) {
-				handleContextMenu(e);
-			} else if (e.button === 0) {
+		if (e.button === 2) {
+			handleContextMenu(e);
+		} else if (e.button === 0) {
+			openNote({ id: node.id });
+			if (node.children.length !== 0) {
 				toggleOpen();
-				openNote({ id: node.id });
-			}
-		} else {
-			if (e.button === 2) {
-				handleContextMenu(e);
-			} else if (e.button === 0) {
-				openNote({ id: node.id });
 			}
 		}
 	}
 
-	function handleNodeKeydown(e: KeyboardEvent) {
+	async function handleNodeKeydown(e: KeyboardEvent) {
 		if (isNew || isRenaming) return;
 
 		if (e.key === 'Enter') {
+			await openNote({ id: node.id });
 			if (node.children.length !== 0) {
 				toggleOpen();
-			} else {
-				openNote({ id: node.id });
 			}
 		} else if (e.key === 'Delete') {
-			handleDeleteFile();
+			await handleDeleteFile();
 		}
 	}
 
-	function handleNameKeydown(e: KeyboardEvent) {
+	async function handleNameKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			if (isRenaming && newName !== node.name) {
-				saveRename();
-			} else if (isNew && node.children.length !== 0) {
-				saveNewFolder();
-			} else if (isNew && node.children.length === 0) {
-				saveNewFile();
+				await saveRename();
+			} else if (isNew) {
+				await saveNewFile();
 			} else {
 				cancelName();
 			}
@@ -216,29 +187,6 @@
 		cancelName();
 	}
 
-	async function saveNewFolder() {
-		try {
-			// Create note with parent ID from current node
-			const folder = await createNote({
-				name: newName,
-				parentId: node.parentId,
-				content: '',
-				isFolder: true
-			});
-
-			if (folder) {
-				if (parentNewTracking) {
-					parentNewTracking.isCreatingNew = null;
-				}
-				newName = '';
-				fileTreeState.isOld = true;
-			}
-		} catch (error) {
-			console.error('Error creating folder:', error);
-		}
-		cancelName();
-	}
-
 	function cancelName() {
 		if (isRenaming) {
 			isRenaming = false;
@@ -286,9 +234,6 @@
 	}
 
 	function handleDragOver(e: DragEvent) {
-		// Only folders can be drop targets
-		if (node.children.length === 0) return;
-
 		// Prevent default to allow drop
 		e.preventDefault();
 

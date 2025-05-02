@@ -28,10 +28,7 @@
 	refreshFileTree();
 
 	// Context menu setup for empty area
-	const contextMenuItems: ContextMenuItem[] = [
-		{ label: 'New File', onClick: handleCreateNewFile },
-		{ label: 'New Folder', onClick: handleCreateNewFolder }
-	];
+	const contextMenuItems: ContextMenuItem[] = [{ label: 'New File', onClick: handleCreateNewFile }];
 
 	// File operations
 	function handleCreateNewFile() {
@@ -78,10 +75,7 @@
 
 		<!-- New input (if creating new file) -->
 		{#if newTracking.isCreatingNew}
-			<Node
-				node={{ id: -1, name: '', parentId: null, type: newTracking.isCreatingNew }}
-				isNew={true}
-			/>
+			<Node node={{ id: -1, name: '', children: [], parentId: null }} isNew={true} />
 		{/if}
 
 		<!-- Empty space with context menu -->
