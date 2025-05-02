@@ -109,7 +109,7 @@
 	}
 
 	/**
-	 * Handle dropped files (for images)
+	 * Handle dropped images
 	 */
 	async function handleDrop(event: DragEvent): Promise<void> {
 		if (!event.dataTransfer?.files || !editorState.editor) return;

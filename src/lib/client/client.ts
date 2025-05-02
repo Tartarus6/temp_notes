@@ -18,13 +18,11 @@ export async function createNote(input: {
 	name: string;
 	parentId: number | null;
 	content?: string;
-	isFolder?: boolean;
 }) {
 	const note = await trpc.noteCreate.mutate({
 		name: input.name,
 		parentId: input.parentId || undefined,
-		content: input.content || 'This is a new note',
-		isFolder: input.isFolder
+		content: input.content || 'This is a new note'
 	});
 	return await note;
 }
@@ -45,17 +43,11 @@ export async function getNotesByParentId(parentId?: number) {
 	return await trpc.notesByParentId.query(parentId);
 }
 
-export async function updateNote(input: {
-	id: number;
-	name: string;
-	content: string;
-	isFolder?: boolean;
-}) {
+export async function updateNote(input: { id: number; name: string; content: string }) {
 	const note = await trpc.noteUpdate.mutate({
 		id: input.id,
 		name: input.name,
-		content: input.content,
-		isFolder: input.isFolder
+		content: input.content
 	});
 	return note[0];
 }

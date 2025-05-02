@@ -36,8 +36,7 @@ const appRouter = router({
 			z.object({
 				name: z.string(),
 				parentId: z.number().optional(),
-				content: z.string(),
-				isFolder: z.boolean().optional()
+				content: z.string()
 			})
 		)
 		.mutation(async (opts) => {
@@ -86,8 +85,7 @@ const appRouter = router({
 			z.object({
 				id: z.number(),
 				name: z.string(),
-				content: z.string(),
-				isFolder: z.boolean().optional()
+				content: z.string()
 			})
 		)
 		.mutation(async (opts) => {

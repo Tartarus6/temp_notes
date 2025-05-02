@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import EditorComponent from '$lib/EditorComponent.svelte';
-	import FileTreeComponent from '$lib/FileTreeComponent.svelte';
+	import ExplorerTreeComponent from '$lib/ExplorerTreeComponent.svelte';
 	import { openNote } from '$lib/utils';
 
 	/**
@@ -29,7 +29,7 @@
 </script>
 
 <div class="grid h-screen grid-flow-row grid-cols-[auto_1fr]">
-	<FileTreeComponent />
+	<ExplorerTreeComponent />
 	<div class="overflow-hidden">
 		<EditorComponent />
 	</div>

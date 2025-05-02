@@ -3,7 +3,7 @@ import {
 	editorState,
 	contextMenuState,
 	type ContextMenuItem,
-	fileTreeState
+	explorerTreeState
 } from './variables.svelte';
 import {
 	deleteNote,
@@ -15,26 +15,24 @@ import {
 } from './client/client';
 
 /**
- * Represents a node in the file system tree
+ * Represents a node in the explorer tree
  */
-export type FileNode = {
+export type ExplorerNode = {
 	id: number;
 	name: string;
-	children: FileNode[];
+	children: ExplorerNode[];
 	note?: Note;
 	parentId: number | null;
 };
 
-export type FileNodeTypes = 'file' | 'folder';
-
 /**
  * Builds a file tree structure from a list of notes
  */
-export function buildFileTree(notes: Note[]): FileNode[] {
+export function buildExplorerTree(notes: Note[]): ExplorerNode[] {
 	// Create a map for quick lookups
-	const noteMap: Record<string, FileNode> = {}; // Changed from number to string for index
+	const noteMap: Record<string, ExplorerNode> = {}; // Changed from number to string for index
 
-	// First pass: Create all file nodes
+	// First pass: Create all explorer nodes
 	for (const note of notes) {
 		noteMap[note.id!] = {
 			id: note.id!,
@@ -46,7 +44,7 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 	}
 
 	// Second pass: Build the tree structure
-	const rootNodes: FileNode[] = [];
+	const rootNodes: ExplorerNode[] = [];
 
 	for (const noteId in noteMap) {
 		const node = noteMap[noteId];
@@ -66,19 +64,19 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 		}
 	}
 
-	// Sort the tree (folders first, then alphabetically)
-	sortFileTree({ children: rootNodes } as FileNode);
+	// Sort the tree (notes with children first, then alphabetically)
+	sortExplorerTree({ children: rootNodes } as ExplorerNode);
 
 	return rootNodes;
 }
 
 /**
- * Sorts a file tree node recursively
+ * Sorts an explorer tree node recursively
  */
-function sortFileTree(node: FileNode): void {
+function sortExplorerTree(node: ExplorerNode): void {
 	if (!node.children.length) return;
 
-	// Sort children: folders first, then alphabetically
+	// Sort children: notes with children first, then alphabetically
 	node.children.sort((a, b) => {
 		if ((a.children.length !== 0) === (b.children.length !== 0)) {
 			return a.name.localeCompare(b.name);
@@ -87,7 +85,7 @@ function sortFileTree(node: FileNode): void {
 	});
 
 	// Sort children's children recursively
-	node.children.forEach(sortFileTree);
+	node.children.forEach(sortExplorerTree);
 }
 
 /**
@@ -214,7 +212,7 @@ export async function fileToBase64(file: File): Promise<string> {
 	});
 }
 
-export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Promise<void> {
+export async function handleDrop(e: DragEvent, targetNode: null | ExplorerNode): Promise<void> {
 	e.preventDefault();
 
 	// Get the dragged data
@@ -223,18 +221,18 @@ export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Pro
 	const data = e.dataTransfer.getData('application/json');
 	if (!data) return;
 
-	const draggedItem = JSON.parse(data) as { id: number; type: FileNodeTypes };
+	const draggedItem = JSON.parse(data) as { id: number };
 	const targetParentId = targetNode?.id || null; // null means root level
 
 	// Don't allow drop on itself
 	if (targetNode && draggedItem.id === targetNode.id) return;
 
 	// Check circular reference (can't drop parent into its own child)
-	if (targetNode && draggedItem.type === 'folder') {
+	if (targetNode) {
 		// If target node is a descendant of dragged item, we can't move
 		const targetAncestors = await getNodeAncestors(targetNode.id);
 		if (targetAncestors.some((ancestor) => ancestor.id === draggedItem.id)) {
-			console.log('Cannot move a folder into its own descendant');
+			console.log('Cannot move a note into its own descendant');
 			return;
 		}
 	}
@@ -245,8 +243,8 @@ export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Pro
 		newParentId: targetParentId
 	});
 
-	// Update file tree
-	fileTreeState.isOld = true;
+	// Update explorer tree
+	explorerTreeState.isOld = true;
 }
 
 /**

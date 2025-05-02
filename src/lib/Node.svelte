@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { type FileNode, type FileNodeTypes, openNote, handleDrop, removeNote } from '$lib/utils';
+	import { type ExplorerNode, openNote, handleDrop, removeNote } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
-	import { contextMenuState, editorState, fileTreeState } from '$lib/variables.svelte';
+	import { contextMenuState, editorState, explorerTreeState } from '$lib/variables.svelte';
 	import { type ContextMenuItem } from '$lib/variables.svelte';
 	import { createNote, renameNote } from '$lib/client/client';
 	import { onMount, setContext, getContext } from 'svelte';
 
 	// Props
 	interface Props {
-		node: FileNode;
+		node: ExplorerNode;
 		indent?: number;
 		isNew?: boolean;
 	}
@@ -16,10 +16,10 @@
 
 	// Context management
 	export interface NewTracking {
-		isCreatingNew: null | FileNodeTypes;
+		isCreatingNew: boolean;
 	}
 	let newTracking: NewTracking = $state({
-		isCreatingNew: null
+		isCreatingNew: false
 	});
 	let parentNewTracking: undefined | NewTracking = getContext('newTracking');
 	setContext('newTracking', newTracking);
@@ -39,9 +39,9 @@
 		const items: ContextMenuItem[] = [];
 
 		items.push(
-			{ label: 'New File', onClick: handleCreateNewFile },
+			{ label: 'New Note', onClick: handleCreateNewNote },
 			{ label: 'Rename', onClick: handleRename },
-			{ label: 'Delete', onClick: handleDeleteFile }
+			{ label: 'Delete', onClick: handleDeleteNote }
 		);
 
 		return items;
@@ -68,22 +68,22 @@
 		});
 	}
 
-	// File operations
-	function handleCreateNewFile() {
+	// Note operations
+	function handleCreateNewNote() {
 		if (!open) toggleOpen();
-		newTracking.isCreatingNew = 'file';
+		newTracking.isCreatingNew = true;
 	}
 
-	async function handleDeleteFile() {
-		if (!confirm(`Are you sure you want to delete the file "${node.name}" and ALL its contents?`))
+	async function handleDeleteNote() {
+		if (!confirm(`Are you sure you want to delete the note "${node.name}" and ALL its contents?`))
 			return;
 
 		try {
 			// The new API automatically deletes all children
 			await removeNote({ id: node.id });
-			fileTreeState.isOld = true; // Force a rerender of the file tree
+			explorerTreeState.isOld = true; // Force a rerender of the explorer tree
 		} catch (error) {
-			console.error('Error deleting file:', error);
+			console.error('Error deleting note:', error);
 		}
 	}
 
@@ -110,7 +110,7 @@
 				toggleOpen();
 			}
 		} else if (e.key === 'Delete') {
-			await handleDeleteFile();
+			await handleDeleteNote();
 		}
 	}
 
@@ -119,7 +119,7 @@
 			if (isRenaming && newName !== node.name) {
 				await saveRename();
 			} else if (isNew) {
-				await saveNewFile();
+				await saveNewNote();
 			} else {
 				cancelName();
 			}
@@ -133,7 +133,6 @@
 		try {
 			let result;
 
-			// Both files and folders use the same renameNote function now
 			result = await renameNote({
 				id: node.id,
 				newName: newName
@@ -157,7 +156,7 @@
 				}
 
 				isRenaming = false;
-				fileTreeState.isOld = true; // Force a rerender of the file tree
+				explorerTreeState.isOld = true; // Force a rerender of the explorer tree
 			}
 		} catch (error) {
 			console.error('Error renaming:', error);
@@ -165,24 +164,23 @@
 		}
 	}
 
-	async function saveNewFile() {
+	async function saveNewNote() {
 		try {
 			// Create note with parent ID from current node
 			const note = await createNote({
 				name: newName,
-				parentId: node.parentId,
-				isFolder: false
+				parentId: node.parentId
 			});
 
 			if (note) {
 				if (parentNewTracking) {
-					parentNewTracking.isCreatingNew = null;
+					parentNewTracking.isCreatingNew = false;
 				}
 				newName = '';
-				fileTreeState.isOld = true;
+				explorerTreeState.isOld = true;
 			}
 		} catch (error) {
-			console.error('Error creating file:', error);
+			console.error('Error creating note:', error);
 		}
 		cancelName();
 	}
@@ -192,9 +190,9 @@
 			isRenaming = false;
 			newName = node.name;
 		} else if (isNew) {
-			fileTreeState.isOld = true;
+			explorerTreeState.isOld = true;
 			if (parentNewTracking) {
-				parentNewTracking.isCreatingNew = null;
+				parentNewTracking.isCreatingNew = false;
 			}
 			newName = '';
 		}
@@ -250,7 +248,7 @@
 	}
 
 	onMount(() => {
-		// Set focus on the input field if it's a new file/folder
+		// Set focus on the input field if it's a new note
 		if (isNew || newTracking.isCreatingNew) {
 			focusInput();
 		}
@@ -289,7 +287,7 @@
 >
 	<button type="button" aria-expanded={open} class="flex w-full items-center py-0.5">
 		{#if node.children.length !== 0}
-			<!-- Directory node -->
+			<!-- Folder Note node -->
 			<!-- Folder toggle icon -->
 			<span class="flex min-w-4 items-center justify-center">
 				<svg
@@ -304,12 +302,12 @@
 				</svg>
 			</span>
 		{:else}
-			<!-- File node -->
+			<!-- Note node -->
 			<!-- Spacer for alignment -->
 			<span class="flex min-w-4 items-center justify-center opacity-0"></span>
 		{/if}
 
-		<!-- File icon -->
+		<!-- Note icon -->
 		<span class="flex min-w-4 items-center justify-center">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -328,7 +326,6 @@
 			{#if isRenaming || isNew}
 				<input
 					bind:this={nameInput}
-					id="rename-file-{node.id}"
 					type="text"
 					bind:value={newName}
 					onkeydown={handleNameKeydown}
@@ -348,7 +345,7 @@
 		<Node node={child} indent={indent + 1} />
 	{/each}
 
-	<!-- New input (if creating new file) -->
+	<!-- New input (if creating new note) -->
 	{#if newTracking.isCreatingNew}
 		<Node
 			node={{

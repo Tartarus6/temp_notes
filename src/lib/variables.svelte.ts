@@ -54,10 +54,10 @@ interface ContextMenuState {
 }
 
 /**
- * File tree state to track updates
+ * Explorer tree state to track updates
  */
-interface FileTreeState {
-	/** Flag to indicate file tree needs refresh */
+interface ExplorerTreeState {
+	/** Flag to indicate explorer tree needs refresh */
 	isOld: boolean;
 }
 
@@ -89,8 +89,8 @@ export let contextMenuState: ContextMenuState = $state({
 });
 
 /**
- * File tree state - globally accessible
+ * explorer tree state - globally accessible
  */
-export const fileTreeState: FileTreeState = $state({
+export const explorerTreeState: ExplorerTreeState = $state({
 	isOld: false
 });
