@@ -488,8 +488,6 @@
 </div>
 
 <style lang="postcss">
-	@import 'tailwindcss';
-
 	button {
 		@apply rounded bg-slate-700 px-3 py-1 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-600;
 	}
