@@ -280,6 +280,10 @@
 	onmousedown={HandleNodeOnmousedown}
 	ondrop={(e) => {
 		isDragOver = false;
+		// if note is newly becoming a folder, then open the dropdown
+		if (node.children.length === 0) {
+			open = true;
+		}
 		handleDrop(e, node);
 	}}
 >
