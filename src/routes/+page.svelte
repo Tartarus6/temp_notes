@@ -13,10 +13,10 @@
 
 			if (!storedNote) return;
 
-			const { name, path } = JSON.parse(storedNote);
+			const { id } = JSON.parse(storedNote);
 
-			if (name && path) {
-				openNote({ name, path }).catch((err) => {
+			if (id) {
+				openNote({ id }).catch((err) => {
 					console.error('Failed to restore note:', err);
 				});
 			}
