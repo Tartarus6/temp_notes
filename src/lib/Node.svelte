@@ -26,9 +26,9 @@
 
 	// State
 	let nameInput: HTMLInputElement | null = $state(null);
+	let newName = $state('');
 	let open = $state(false);
 	let isRenaming = $state(false);
-	let newName = $state('');
 	let isDragging = $state(false);
 	let isDragOver = $state(false);
 
@@ -322,7 +322,7 @@
 			</svg>
 		</span>
 		<!-- name/rename input -->
-		<div class="flex w-full pr-4 pl-2">
+		<div class="flex w-full min-w-32 pr-4 pl-2">
 			{#if isRenaming || isNew}
 				<input
 					bind:this={nameInput}
@@ -330,7 +330,7 @@
 					bind:value={newName}
 					onkeydown={handleNameKeydown}
 					onblur={cancelName}
-					class="w-full rounded border border-blue-500 bg-slate-600 px-1 text-sm focus:outline-none"
+					class="w-full min-w-16 rounded border border-blue-500 bg-slate-600 px-1 text-sm focus:outline-none"
 				/>
 			{:else}
 				<span class="text-left break-all opacity-65">{node.name}</span>
