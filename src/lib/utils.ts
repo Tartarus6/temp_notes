@@ -20,8 +20,7 @@ import {
 export type FileNode = {
 	id: number;
 	name: string;
-	type: FileNodeTypes;
-	children?: FileNode[];
+	children: FileNode[];
 	note?: Note;
 	parentId: number | null;
 };
@@ -40,8 +39,7 @@ export function buildFileTree(notes: Note[]): FileNode[] {
 		noteMap[note.id!] = {
 			id: note.id!,
 			name: note.name,
-			type: note.isFolder === 1 ? 'folder' : 'file',
-			children: note.isFolder === 1 ? [] : undefined,
+			children: [],
 			note: note,
 			parentId: note.parentId!
 		};
@@ -78,14 +76,14 @@ export function buildFileTree(notes: Note[]): FileNode[] {
  * Sorts a file tree node recursively
  */
 function sortFileTree(node: FileNode): void {
-	if (!node.children?.length) return;
+	if (!node.children.length) return;
 
 	// Sort children: folders first, then alphabetically
 	node.children.sort((a, b) => {
-		if (a.type === b.type) {
+		if ((a.children.length !== 0) === (b.children.length !== 0)) {
 			return a.name.localeCompare(b.name);
 		}
-		return a.type === 'folder' ? -1 : 1;
+		return a.children.length !== 0 ? -1 : 1;
 	});
 
 	// Sort children's children recursively
@@ -143,8 +141,7 @@ export async function saveNote(): Promise<Note | null> {
 		return await updateNote({
 			id: note.id,
 			name: note.name,
-			content: editor.getHTML(),
-			isFolder: note.isFolder === 1
+			content: editor.getHTML()
 		});
 	} catch (error) {
 		console.error('Error saving note:', error);
@@ -219,7 +216,7 @@ export async function fileToBase64(file: File): Promise<string> {
 
 export async function handleDrop(e: DragEvent, targetNode: null | FileNode): Promise<void> {
 	// Only folders can be drop targets
-	if (targetNode && targetNode.type !== 'folder') return;
+	if (targetNode && targetNode.children.length !== 0) return;
 
 	e.preventDefault();
 

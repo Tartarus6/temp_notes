@@ -69,8 +69,7 @@ export async function renameNote(input: { id: number; newName: string }) {
 	return await updateNote({
 		id: input.id,
 		name: input.newName,
-		content: note.content,
-		isFolder: note.isFolder === 1
+		content: note.content
 	});
 }
 

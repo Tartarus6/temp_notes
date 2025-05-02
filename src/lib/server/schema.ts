@@ -4,8 +4,7 @@ export const notesTable = sqliteTable('notes_table', {
 	id: int().primaryKey({ autoIncrement: true }).notNull(),
 	name: text().notNull(),
 	parentId: int(), // Can be null for root notes
-	content: text().notNull(),
-	isFolder: int().default(0).notNull() // 0 = false, 1 = true (SQLite doesn't have boolean)
+	content: text().notNull()
 });
 
 export const imagesTable = sqliteTable('images_table', {

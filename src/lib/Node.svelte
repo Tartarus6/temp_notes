@@ -45,14 +45,14 @@
 	function getContextMenuItems(): ContextMenuItem[] {
 		const items: ContextMenuItem[] = [];
 
-		if (node.type === 'folder') {
+		if (node.children.length !== 0) {
 			items.push(
 				{ label: 'New File', onClick: handleCreateNewFile },
 				{ label: 'New Folder', onClick: handleCreateNewFolder },
 				{ label: 'Rename Folder', onClick: handleRename },
-				{ label: 'Delete Folder', onClick: handleDeleteFolder }
+				{ label: 'Delete Folder', onClick: handleDeleteFile }
 			);
-		} else if (node.type === 'file') {
+		} else {
 			items.push(
 				{ label: 'Rename', onClick: handleRename },
 				{ label: 'Delete File', onClick: handleDeleteFile }
@@ -94,19 +94,8 @@
 		newTracking.isCreatingNew = 'folder';
 	}
 
-	function handleDeleteFile() {
-		if (!confirm(`Are you sure you want to delete ${node.name}?`)) return;
-
-		try {
-			removeNote({ id: node.id });
-			fileTreeState.isOld = true; // Force a rerender of the file tree
-		} catch (error) {
-			console.error('Error deleting file:', error);
-		}
-	}
-
-	async function handleDeleteFolder() {
-		if (!confirm(`Are you sure you want to delete the folder "${node.name}" and ALL its contents?`))
+	async function handleDeleteFile() {
+		if (!confirm(`Are you sure you want to delete the file "${node.name}" and ALL its contents?`))
 			return;
 
 		try {
@@ -114,7 +103,7 @@
 			await deleteNote({ id: node.id });
 			fileTreeState.isOld = true; // Force a rerender of the file tree
 		} catch (error) {
-			console.error('Error deleting folder:', error);
+			console.error('Error deleting file:', error);
 		}
 	}
 
@@ -122,13 +111,14 @@
 	function HandleNodeOnmousedown(e: MouseEvent) {
 		if (isRenaming || isNew || newTracking.isCreatingNew) return;
 
-		if (node.type === 'folder') {
+		if (node.children.length !== 0) {
 			if (e.button === 2) {
 				handleContextMenu(e);
 			} else if (e.button === 0) {
 				toggleOpen();
+				openNote({ id: node.id });
 			}
-		} else if (node.type === 'file') {
+		} else {
 			if (e.button === 2) {
 				handleContextMenu(e);
 			} else if (e.button === 0) {
@@ -141,17 +131,13 @@
 		if (isNew || isRenaming) return;
 
 		if (e.key === 'Enter') {
-			if (node.type === 'file') {
-				openNote({ id: node.id });
-			} else if (node.type === 'folder') {
+			if (node.children.length !== 0) {
 				toggleOpen();
+			} else {
+				openNote({ id: node.id });
 			}
 		} else if (e.key === 'Delete') {
-			if (node.type === 'file') {
-				handleDeleteFile();
-			} else if (node.type === 'folder') {
-				handleDeleteFolder();
-			}
+			handleDeleteFile();
 		}
 	}
 
@@ -159,10 +145,10 @@
 		if (e.key === 'Enter') {
 			if (isRenaming && newName !== node.name) {
 				saveRename();
-			} else if (isNew && node.type === 'file') {
-				saveNewFile();
-			} else if (isNew && node.type === 'folder') {
+			} else if (isNew && node.children.length !== 0) {
 				saveNewFolder();
+			} else if (isNew && node.children.length === 0) {
+				saveNewFile();
 			} else {
 				cancelName();
 			}
@@ -289,8 +275,7 @@
 			e.dataTransfer.setData(
 				'application/json',
 				JSON.stringify({
-					id: node.id,
-					type: node.type
+					id: node.id
 				})
 			);
 		}
@@ -302,7 +287,7 @@
 
 	function handleDragOver(e: DragEvent) {
 		// Only folders can be drop targets
-		if (node.type !== 'folder') return;
+		if (node.children.length === 0) return;
 
 		// Prevent default to allow drop
 		e.preventDefault();
@@ -354,7 +339,7 @@
 	}}
 >
 	<button type="button" aria-expanded={open} class="flex w-full items-center py-0.5">
-		{#if node.type === 'folder'}
+		{#if node.children.length !== 0}
 			<!-- Directory node -->
 			<!-- Folder toggle icon -->
 			<span class="flex min-w-4 items-center justify-center">
@@ -369,40 +354,26 @@
 					<path d="M6 4L10 8L6 12L5.3 11.3L8.6 8L5.3 4.7L6 4Z" />
 				</svg>
 			</span>
-
-			<!-- Folder icon -->
-			<span class="flex min-w-4 items-center justify-center">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 16 16"
-					fill={open ? 'transparent' : 'var(--color-blue-500)'}
-					stroke="var(--color-blue-500)"
-				>
-					<path d="M2 2v12h12V4H8L6 2H2z" />
-				</svg>
-			</span>
 		{:else}
 			<!-- File node -->
 			<!-- Spacer for alignment -->
 			<span class="flex min-w-4 items-center justify-center opacity-0"></span>
-
-			<!-- File icon -->
-			<span class="flex min-w-4 items-center justify-center">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 16 16"
-					fill="var(--color-blue-500)"
-				>
-					<path
-						d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 5h-3V2l3 3zM3 14V2h6v3.5l.5.5H13v8H3z"
-					/>
-				</svg>
-			</span>
 		{/if}
+
+		<!-- File icon -->
+		<span class="flex min-w-4 items-center justify-center">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="16"
+				height="16"
+				viewBox="0 0 16 16"
+				fill="var(--color-blue-500)"
+			>
+				<path
+					d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 5h-3V2l3 3zM3 14V2h6v3.5l.5.5H13v8H3z"
+				/>
+			</svg>
+		</span>
 		<!-- name/rename input -->
 		<div class="flex w-full pr-4 pl-2">
 			{#if isRenaming || isNew}
@@ -435,7 +406,7 @@
 				id: -1, // Temporary ID for new node
 				name: '',
 				parentId: node.id,
-				type: newTracking.isCreatingNew,
+				children: [],
 				note: {} as any
 			}}
 			isNew={true}
