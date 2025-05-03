@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import EditorComponent from '$lib/EditorComponent.svelte';
-	import FileTreeComponent from '$lib/FileTreeComponent.svelte';
+	import ExplorerTreeComponent from '$lib/ExplorerTreeComponent.svelte';
 	import { openNote } from '$lib/utils';
 
 	/**
@@ -13,10 +13,10 @@
 
 			if (!storedNote) return;
 
-			const { name, path } = JSON.parse(storedNote);
+			const { id } = JSON.parse(storedNote);
 
-			if (name && path) {
-				openNote({ name, path }).catch((err) => {
+			if (id) {
+				openNote({ id }).catch((err) => {
 					console.error('Failed to restore note:', err);
 				});
 			}
@@ -29,7 +29,7 @@
 </script>
 
 <div class="grid h-screen grid-flow-row grid-cols-[auto_1fr]">
-	<FileTreeComponent />
+	<ExplorerTreeComponent />
 	<div class="overflow-hidden">
 		<EditorComponent />
 	</div>
