@@ -44,9 +44,9 @@ _Feel free to update this README as we add new features!!_
     - Auto-saving with status indicators    
 
 ## Specific File Management Features
-- Create new files and folders
-- Rename files and folders
-- Delete files and folders
+- Create new notes
+- Rename notes
+- Delete notes
 - Context menus for file operations
 
 ## Prerequisites

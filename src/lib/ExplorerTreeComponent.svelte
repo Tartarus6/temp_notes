@@ -1,45 +1,38 @@
 <script lang="ts">
 	import { fetchNotes } from '$lib/client/client';
 	import type { Note } from '$lib/server/server';
-	import { buildFileTree, type FileNode, handleContextMenu, handleDrop } from '$lib/utils';
+	import { buildExplorerTree, type ExplorerNode, handleContextMenu, handleDrop } from '$lib/utils';
 	import Node from '$lib/Node.svelte';
-	import { fileTreeState, type ContextMenuItem } from '$lib/variables.svelte';
+	import { explorerTreeState, type ContextMenuItem } from '$lib/variables.svelte';
 	import { type NewTracking } from '$lib/Node.svelte';
 	import { setContext } from 'svelte';
 
 	// Context management
 	let newTracking: NewTracking = $state({
-		isCreatingNew: null
+		isCreatingNew: false
 	});
 	setContext('newTracking', newTracking);
 
 	// State management
 	let notesList: Note[] = $state([]);
-	let fileTree: FileNode[] = $state([]);
+	let explorerTree: ExplorerNode[] = $state([]);
 	let isDragOver = $state(false);
 
-	// Initialize file tree
-	async function refreshFileTree() {
+	// Initialize explorer tree
+	async function refreshExplorerTree() {
 		notesList = await fetchNotes();
-		fileTree = buildFileTree(notesList);
+		explorerTree = buildExplorerTree(notesList);
 	}
 
 	// Load initial data
-	refreshFileTree();
+	refreshExplorerTree();
 
 	// Context menu setup for empty area
-	const contextMenuItems: ContextMenuItem[] = [
-		{ label: 'New File', onClick: handleCreateNewFile },
-		{ label: 'New Folder', onClick: handleCreateNewFolder }
-	];
+	const contextMenuItems: ContextMenuItem[] = [{ label: 'New Note', onClick: handleCreateNewNote }];
 
-	// File operations
-	function handleCreateNewFile() {
-		newTracking.isCreatingNew = 'file';
-	}
-
-	function handleCreateNewFolder() {
-		newTracking.isCreatingNew = 'directory';
+	// Note operations
+	function handleCreateNewNote() {
+		newTracking.isCreatingNew = true;
 	}
 
 	// Drag and drop handlers
@@ -57,9 +50,9 @@
 
 	// Watch for tree update requests
 	$effect(() => {
-		if (fileTreeState.isOld) {
-			refreshFileTree();
-			fileTreeState.isOld = false;
+		if (explorerTreeState.isOld) {
+			refreshExplorerTree();
+			explorerTreeState.isOld = false;
 		}
 	});
 </script>
@@ -70,15 +63,15 @@
 		<span class="font-bold">TempNotes</span>
 	</div>
 
-	<!-- File tree content -->
+	<!-- Explorer tree content -->
 	<div class="w-fit min-w-full flex-1">
-		{#each fileTree as node}
+		{#each explorerTree as node}
 			<Node {node} />
 		{/each}
 
-		<!-- New input (if creating new file) -->
+		<!-- New input (if creating new note) -->
 		{#if newTracking.isCreatingNew}
-			<Node node={{ name: '', path: '/', type: newTracking.isCreatingNew }} isNew={true} />
+			<Node node={{ id: -1, name: '', children: [], parentId: null }} isNew={true} />
 		{/if}
 
 		<!-- Empty space with context menu -->
@@ -92,11 +85,15 @@
 				handleDrop(e, null);
 			}}
 			role="region"
-			aria-label="File tree empty area"
+			aria-label="Explorer tree empty area"
 		>
-			{#if fileTree.length === 0 && !newTracking.isCreatingNew}
+			{#if explorerTree.length === 0 && !newTracking.isCreatingNew}
 				<div class="px-4 py-6 text-center text-sm text-slate-400 select-none">
-					<div class="mb-2">
+					<button
+						onclick={() => handleCreateNewNote()}
+						class="mb-2 w-full cursor-pointer rounded-md bg-blue-500 p-2 text-slate-100 active:bg-blue-600"
+						aria-label="new note button"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="mx-auto h-8 w-8 opacity-60"
@@ -111,9 +108,9 @@
 								d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 							/>
 						</svg>
-					</div>
-					<p class="font-medium">No notes or folders yet</p>
-					<p class="mt-1 text-xs">Right-click here to create a new note or folder</p>
+					</button>
+					<p class="font-medium">No notes yet</p>
+					<p class="mt-1 text-xs">Right-click here to create a new note</p>
 				</div>
 			{/if}
 		</div>

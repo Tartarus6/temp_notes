@@ -1,12 +1,29 @@
 import { db } from './db';
 import { z } from 'zod';
-import { eq, like, and } from 'drizzle-orm';
+import { eq, isNull, and, or, SQL, sql } from 'drizzle-orm';
 import { createHTTPServer } from '@trpc/server/adapters/standalone';
 import { publicProcedure, router } from './trpc';
 import { notesTable, imagesTable } from './schema';
 import { randomUUID } from 'crypto';
 
 const listenPort = 3000;
+
+// Helper function to get all child notes (recursive)
+async function getAllChildrenIds(parentId: number): Promise<number[]> {
+	const children = await db
+		.select({ id: notesTable.id })
+		.from(notesTable)
+		.where(eq(notesTable.parentId, parentId));
+
+	let childrenIds = children.map((child) => child.id);
+
+	for (const child of children) {
+		const nestedChildren = await getAllChildrenIds(child.id);
+		childrenIds = [...childrenIds, ...nestedChildren];
+	}
+
+	return childrenIds;
+}
 
 const appRouter = router({
 	noteList: publicProcedure.query(async () => {
@@ -18,7 +35,7 @@ const appRouter = router({
 		.input(
 			z.object({
 				name: z.string(),
-				path: z.string().startsWith('/').endsWith('/'),
+				parentId: z.number().optional(),
 				content: z.string()
 			})
 		)
@@ -28,55 +45,119 @@ const appRouter = router({
 				.insert(notesTable)
 				.values({
 					name: input.name,
-					path: input.path,
+					parentId: input.parentId || null,
 					content: input.content
 				})
 				.returning();
 			return note[0];
 		}),
 
-	noteDelete: publicProcedure
-		.input(z.object({ path: z.string(), name: z.string() }))
-		.mutation(async (opts) => {
-			const { input } = opts;
-			const note = await db
-				.delete(notesTable)
-				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)))
-				.returning();
-			return note[0];
-		}),
+	noteDelete: publicProcedure.input(z.object({ id: z.number() })).mutation(async (opts) => {
+		const { input } = opts;
 
-	noteByPath: publicProcedure
-		.input(z.object({ path: z.string(), name: z.string() }))
-		.query(async (opts) => {
-			const { input } = opts;
-			const note = await db
-				.select()
-				.from(notesTable)
-				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)));
-			return note;
-		}),
+		// Get all child notes to delete as well
+		const childrenIds = await getAllChildrenIds(input.id);
+
+		// Delete the children first
+		if (childrenIds.length > 0) {
+			await db.delete(notesTable).where(
+				sql`${notesTable.id} IN (${sql.join(
+					childrenIds.map((id) => sql`${id}`),
+					sql`, `
+				)})`
+			);
+		}
+
+		// Delete the parent note
+		const note = await db.delete(notesTable).where(eq(notesTable.id, input.id)).returning();
+
+		return note[0];
+	}),
+
+	noteById: publicProcedure.input(z.number()).query(async (opts) => {
+		const { input } = opts;
+		const note = await db.select().from(notesTable).where(eq(notesTable.id, input));
+		return note[0];
+	}),
 
 	noteUpdate: publicProcedure
-		.input(z.object({ path: z.string(), name: z.string(), content: z.string() }))
+		.input(
+			z.object({
+				id: z.number(),
+				name: z.string(),
+				content: z.string()
+			})
+		)
 		.mutation(async (opts) => {
 			const { input } = opts;
 			const note = await db
 				.update(notesTable)
-				.set({ name: input.name, content: input.content })
-				.where(and(eq(notesTable.path, input.path), eq(notesTable.name, input.name)))
+				.set({
+					name: input.name,
+					content: input.content
+				})
+				.where(eq(notesTable.id, input.id))
 				.returning();
 			return note;
 		}),
 
-	notesByPath: publicProcedure.input(z.string()).query(async (opts) => {
+	notesByParentId: publicProcedure.input(z.number().optional()).query(async (opts) => {
+		const { input } = opts;
+		let whereClause: SQL<unknown>;
+
+		if (input === undefined) {
+			// Get root notes (null parentId)
+			whereClause = isNull(notesTable.parentId);
+		} else {
+			whereClause = eq(notesTable.parentId, input);
+		}
+
+		const notes = await db.select().from(notesTable).where(whereClause);
+
+		return notes;
+	}),
+
+	// Search notes by name
+	notesSearch: publicProcedure.input(z.string()).query(async (opts) => {
 		const { input } = opts;
 		const notes = await db
 			.select()
 			.from(notesTable)
-			.where(like(notesTable.path, `${input}%`));
+			.where(sql`${notesTable.name} LIKE ${'%' + input + '%'}`);
 		return notes;
 	}),
+
+	// Move a note to a new parent
+	noteMove: publicProcedure
+		.input(z.object({ id: z.number(), newParentId: z.number().nullable() }))
+		.mutation(async (opts) => {
+			const { input } = opts;
+
+			// Check for circular references (can't move a note to be its own descendant)
+			if (input.newParentId !== null) {
+				let currentParent = input.newParentId;
+				while (currentParent !== null) {
+					if (currentParent === input.id) {
+						throw new Error('Cannot move a note to be its own descendant');
+					}
+					const parent = await db.select().from(notesTable).where(eq(notesTable.id, currentParent));
+
+					if (parent.length === 0 || parent[0].parentId === null) {
+						break;
+					}
+
+					currentParent = parent[0].parentId;
+				}
+			}
+
+			const note = await db
+				.update(notesTable)
+				.set({ parentId: input.newParentId })
+				.where(eq(notesTable.id, input.id))
+				.returning();
+
+			return note[0];
+		}),
 
 	// Image handling
 	imageUpload: publicProcedure

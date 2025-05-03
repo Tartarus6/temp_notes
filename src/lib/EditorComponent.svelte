@@ -109,7 +109,7 @@
 	}
 
 	/**
-	 * Handle dropped files (for images)
+	 * Handle dropped images
 	 */
 	async function handleDrop(event: DragEvent): Promise<void> {
 		if (!event.dataTransfer?.files || !editorState.editor) return;
@@ -489,7 +489,6 @@
 
 <style lang="postcss">
 	@import 'tailwindcss';
-
 	button {
 		@apply rounded bg-slate-700 px-3 py-1 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-600;
 	}
