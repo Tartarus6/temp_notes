@@ -281,7 +281,6 @@
 					}
 				}),
 				Link.configure({
-					openOnClick: false,
 					HTMLAttributes: {
 						class: 'text-blue-400 underline hover:text-blue-300',
 						rel: 'noopener noreferrer',
@@ -412,10 +411,17 @@
 				<button onmousedown={handleImageFileInput}> Image </button>
 
 				<!-- Link button -->
-				<button 
+				<button
 					onmousedown={() => {
-						const url = prompt('URL');
-						if (url && editorState.editor) {
+						const regex = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//; // checks if url starts with a protocol
+						let url = prompt('URL') || '';
+
+						if (!regex.test(url)) {
+							// If the URL doesn't start with a protocol, add https://
+							url = 'https://' + url;
+						}
+
+						if (editorState.editor) {
 							editorState.editor.chain().focus().setLink({ href: url }).run();
 						}
 					}}
