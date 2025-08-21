@@ -1,4 +1,4 @@
-import { db } from './db';
+import { db, initializeDatabase } from './db';
 import { z } from 'zod';
 import { eq, isNull, and, or, SQL, sql } from 'drizzle-orm';
 import { createHTTPServer } from '@trpc/server/adapters/standalone';
@@ -199,17 +199,33 @@ const appRouter = router({
 const server = createHTTPServer({
 	router: appRouter,
 	middleware: cors({
-		origin: [
-			'http://localhost:4173', // SvelteKit preview
-			'http://localhost:5173', // SvelteKit dev
-			'http://127.0.0.1:4173',
-			'http://127.0.0.1:5173'
-		],
+		origin: process.env.NODE_ENV === 'production' 
+			? '*' // Allow all origins in production Docker
+			: [
+				'http://localhost:4173', // SvelteKit preview
+				'http://localhost:5173', // SvelteKit dev
+				'http://127.0.0.1:4173',
+				'http://127.0.0.1:5173',
+				'http://localhost:80', // Docker SvelteKit server
+				'http://127.0.0.1:80'
+			],
 		credentials: true
 	})
 });
 
 export type AppRouter = typeof appRouter;
 export type Note = typeof notesTable.$inferInsert;
-server.listen(listenPort);
-console.log(`Server listening on port ${listenPort}`);
+
+// Initialize database and start server
+async function startServer() {
+	try {
+		await initializeDatabase();
+		server.listen(listenPort);
+		console.log(`Server listening on port ${listenPort}`);
+	} catch (error) {
+		console.error('Failed to start server:', error);
+		process.exit(1);
+	}
+}
+
+startServer();

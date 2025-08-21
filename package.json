@@ -7,6 +7,8 @@
 		"start": "npx tsx src/lib/server/server.ts",
 		"dev": "vite dev",
 		"build": "vite build",
+		"build:docker": "docker-compose up --build",
+		"deploy": "docker build -t notes-app .",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

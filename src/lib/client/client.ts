@@ -1,10 +1,21 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '$lib/server/server';
+import { browser } from '$app/environment';
+
+// Determine the API URL based on environment
+const getApiUrl = () => {
+	if (browser) {
+		// In browser, use the current host with port 3000
+		return `${window.location.protocol}//${window.location.hostname}:3000`;
+	}
+	// Server-side, use localhost
+	return 'http://localhost:3000';
+};
 
 const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: 'http://localhost:3000'
+			url: getApiUrl()
 		})
 	]
 });
