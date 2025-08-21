@@ -5,6 +5,7 @@ import { createHTTPServer } from '@trpc/server/adapters/standalone';
 import { publicProcedure, router } from './trpc';
 import { notesTable, imagesTable } from './schema';
 import { randomUUID } from 'crypto';
+import cors from 'cors';
 
 const listenPort = 3000;
 
@@ -196,7 +197,16 @@ const appRouter = router({
 });
 
 const server = createHTTPServer({
-	router: appRouter
+	router: appRouter,
+	middleware: cors({
+		origin: [
+			'http://localhost:4173', // SvelteKit preview
+			'http://localhost:5173', // SvelteKit dev
+			'http://127.0.0.1:4173',
+			'http://127.0.0.1:5173'
+		],
+		credentials: true
+	})
 });
 
 export type AppRouter = typeof appRouter;
