@@ -6,7 +6,9 @@
 	"scripts": {
 		"start": "npx tsx src/lib/server/server.ts",
 		"dev": "vite dev",
-		"build": "tsc",
+		"build": "vite build",
+		"build:docker": "docker-compose up --build",
+		"deploy": "docker build -t notes-app .",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -17,7 +19,6 @@
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
-		"@sveltejs/adapter-vercel": "^5.5.2",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/vite": "^4.0.0",
@@ -56,6 +57,7 @@
 	},
 	"dependencies": {
 		"@libsql/client": "^0.14.0",
+		"@sveltejs/adapter-node": "^5.2.12",
 		"@tiptap/core": "^2.11.5",
 		"@tiptap/extension-code-block-lowlight": "^2.11.5",
 		"@tiptap/extension-image": "^2.11.7",

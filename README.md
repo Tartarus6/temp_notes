@@ -85,24 +85,7 @@ npm run dev -- --open
 
 ## Building for Production
 
-**Windows or Unix/Mac:**
-
-```shellscript
-# Run type checking
-npm run check
-
-# Format code
-npm run format
-
-# Lint code
-npm run lint
-
-# Build the production version
-npm run build
-
-# Preview the production build
-npm run preview
-```
+**look at `DEPLOYMENT.md` for detailed instructions**
 
 ## Project Structure
 

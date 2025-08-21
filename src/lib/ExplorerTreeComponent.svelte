@@ -5,7 +5,8 @@
 	import Node from '$lib/Node.svelte';
 	import { explorerTreeState, type ContextMenuItem } from '$lib/variables.svelte';
 	import { type NewTracking } from '$lib/Node.svelte';
-	import { setContext } from 'svelte';
+	import { setContext, onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	// Context management
 	let newTracking: NewTracking = $state({
@@ -20,12 +21,15 @@
 
 	// Initialize explorer tree
 	async function refreshExplorerTree() {
+		if (!browser) return; // Only run in browser, not during SSR/build
 		notesList = await fetchNotes();
 		explorerTree = buildExplorerTree(notesList);
 	}
 
-	// Load initial data
-	refreshExplorerTree();
+	// Load initial data only in browser
+	onMount(() => {
+		refreshExplorerTree();
+	});
 
 	// Context menu setup for empty area
 	const contextMenuItems: ContextMenuItem[] = [{ label: 'New Note', onClick: handleCreateNewNote }];

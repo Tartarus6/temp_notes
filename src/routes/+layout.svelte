@@ -7,8 +7,8 @@
 </script>
 
 <svelte:head>
-	<link rel="stylesheet" href="/src/lib/mathquill-desmos/mathquill.css" />
-	<script src="/src/lib/mathquill-desmos/mathquill.js"></script>
+	<link rel="stylesheet" href="/mathquill-desmos/mathquill.css" />
+	<script src="/mathquill-desmos/mathquill.js"></script>
 </svelte:head>
 
 <ContextMenu bind:this={contextMenuState.contextMenu} />
