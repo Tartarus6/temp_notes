@@ -90,9 +90,22 @@ npm run dev -- --open
 ## Project Structure
 
 - `/src/lib` - Core components and utilities
-- `/src/routes` - SvelteKit routes
-- `/src/server.js` - Express backend server
-- `/notes` - SQLite database location
+- `/src/routes` - SvelteKit routes and API endpoints
+- `/src/routes/api` - Server-side API routes that proxy to the tRPC server
+- `/src/lib/server` - Backend tRPC server and database logic
+- `/src/lib/client` - Client-side API communication utilities
+- SQLite database file in project root
+
+## Architecture
+
+The application uses a layered architecture:
+
+1. **Frontend (SvelteKit)**: Runs on port 5173 (dev) with reactive components
+2. **SvelteKit API Layer**: RESTful API routes at `/api/*` that handle client requests
+3. **Backend tRPC Server**: Internal server running on port 3001 with direct database access
+4. **Database (SQLite)**: File-based storage with Drizzle ORM
+
+The client never communicates directly with port 3001. Instead, all API calls go through SvelteKit's server-side API routes, which then communicate internally with the tRPC server.
 
 ## Development Workflow
 

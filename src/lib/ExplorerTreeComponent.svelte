@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fetchNotes } from '$lib/client/client';
+	import { fetchNotes } from '$lib/client/sveltekit-client';
 	import type { Note } from '$lib/server/server';
 	import { buildExplorerTree, type ExplorerNode, handleContextMenu, handleDrop } from '$lib/utils';
 	import Node from '$lib/Node.svelte';

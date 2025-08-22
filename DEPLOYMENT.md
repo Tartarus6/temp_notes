@@ -7,7 +7,6 @@ This guide explains how to deploy your SvelteKit notes application with both the
 Your application consists of:
 - **tRPC/Database Server**: Runs on port 3001, handles API requests and database operations
 - **SvelteKit Website Server**: Runs on port 80, serves the frontend application
-
 - **SQLite Database**: Persisted as a volume mount for data persistence
 
 ## Local Testing
@@ -22,7 +21,6 @@ docker-compose up --build
 Your application will be available at:
 - Website: http://localhost:80
 - API: http://localhost:3001
-
 
 ## Server Deployment
 
