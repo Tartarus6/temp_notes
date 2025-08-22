@@ -3,7 +3,7 @@
 	import Node from '$lib/Node.svelte';
 	import { contextMenuState, editorState, explorerTreeState } from '$lib/variables.svelte';
 	import { type ContextMenuItem } from '$lib/variables.svelte';
-	import { createNote, renameNote } from '$lib/client/client';
+	import { createNote, renameNote } from '$lib/client/sveltekit-client';
 	import { onMount, setContext, getContext } from 'svelte';
 
 	// Props

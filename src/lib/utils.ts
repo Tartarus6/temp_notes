@@ -12,7 +12,7 @@ import {
 	updateNote,
 	moveNote,
 	getNotePath
-} from './client/client';
+} from './client/sveltekit-client';
 
 /**
  * Represents a node in the explorer tree
