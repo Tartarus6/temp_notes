@@ -5,11 +5,11 @@ import { browser } from '$app/environment';
 // Determine the API URL based on environment
 const getApiUrl = () => {
 	if (browser) {
-		// In browser, use the current host with port 3000
-		return `${window.location.protocol}//${window.location.hostname}:3000`;
+		// In browser, use the current host with port 3001
+		return `${window.location.protocol}//${window.location.hostname}:3001`;
 	}
 	// Server-side, use localhost
-	return 'http://localhost:3000';
+	return 'http://localhost:3001';
 };
 
 const trpc = createTRPCProxyClient<AppRouter>({

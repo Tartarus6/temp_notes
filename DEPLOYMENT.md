@@ -5,8 +5,8 @@ This guide explains how to deploy your SvelteKit notes application with both the
 ## Architecture
 
 Your application consists of:
-- **tRPC/Database Server**: Runs on port 3000, handles API requests and database operations
-- **SvelteKit Website Server**: Runs on port 3001, serves the frontend application
+- **tRPC/Database Server**: Runs on port 3001, handles API requests and database operations
+- **SvelteKit Website Server**: Runs on port 80, serves the frontend application
 - **SQLite Database**: Persisted as a volume mount for data persistence
 
 ## Local Testing
@@ -19,8 +19,8 @@ docker-compose up --build
 ```
 
 Your application will be available at:
-- Website: http://localhost:3001
-- API: http://localhost:3000
+- Website: http://localhost:80
+- API: http://localhost:3001
 
 ## Server Deployment
 
@@ -63,8 +63,8 @@ Your application will be available at:
    ```bash
    docker run -d \
      --name notes-app \
-     -p 3000:3000 \
      -p 3001:3001 \
+     -p 80:80 \
      -v /path/to/data/notes.db:/app/notes.db \
      --restart unless-stopped \
      your-registry/notes-app:latest
@@ -78,8 +78,8 @@ Update your `docker-compose.yml` or Docker run command to map to appropriate por
 
 ```yaml
 ports:
-  - "80:3001"   # Map website to port 80
-  - "3000:3000" # Keep API on port 3000
+  - "80:80"   # Map website to port 80
+  - "3001:3001" # Keep API on port 3001
 ```
 
 ### Environment Variables
@@ -89,7 +89,7 @@ Set production environment variables:
 ```yaml
 environment:
   - NODE_ENV=production
-  - PORT=3001
+  - PORT=80
 ```
 
 ### Database Persistence
@@ -115,7 +115,7 @@ server {
 
     # Website
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -124,7 +124,7 @@ server {
 
     # API
     location /api/ {
-        proxy_pass http://localhost:3000/;
+        proxy_pass http://localhost:3001/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -155,8 +155,8 @@ Update `src/lib/server/server.ts` CORS settings:
 
 ```typescript
 origin: process.env.NODE_ENV === 'production' 
-  ? ['https://your-domain.com', 'http://localhost:3001']
-  : ['http://localhost:4173', 'http://localhost:5173', 'http://localhost:3001']
+  ? ['https://your-domain.com', 'http://localhost:80']
+  : ['http://localhost:4173', 'http://localhost:5173', 'http://localhost:80']
 ```
 
 ## Monitoring & Maintenance
@@ -223,11 +223,11 @@ docker-compose restart
 ### Network Issues
 ```bash
 # Check port availability
-netstat -tlnp | grep :3000
 netstat -tlnp | grep :3001
+netstat -tlnp | grep :80
 
 # Test API connectivity
-curl http://localhost:3000/noteList
+curl http://localhost:3001/noteList
 ```
 
 ## Security Considerations
@@ -281,5 +281,5 @@ git pull && docker-compose up --build -d
 cp notes.db notes-backup-$(date +%Y%m%d).db
 
 # Check health
-curl http://localhost:3001
+curl http://localhost:80
 ```

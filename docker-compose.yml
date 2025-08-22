@@ -4,7 +4,7 @@ services:
   notes-app:
     build: .
     ports:
-      - "3000:3000"  # tRPC/database server
+      - "3001:3001"  # tRPC/database server
       - "80:80"  # SvelteKit website server
     volumes:
       - ./notes.db:/app/notes.db  # Persist SQLite database

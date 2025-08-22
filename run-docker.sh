@@ -15,7 +15,7 @@ docker rm temp-notes-app 2>/dev/null || true
 echo "Starting new container..."
 docker run -d \
   --name temp-notes-app \
-  -p 3000:3000 \
+  -p 3001:3001 \
   -p 80:80 \
   -v $(pwd)/notes.db:/app/notes.db \
   -e NODE_ENV=production \

@@ -7,7 +7,7 @@ import { notesTable, imagesTable } from './schema';
 import { randomUUID } from 'crypto';
 import cors from 'cors';
 
-const listenPort = 3000;
+const listenPort = 3001;
 
 // Helper function to get all child notes (recursive)
 async function getAllChildrenIds(parentId: number): Promise<number[]> {
@@ -199,17 +199,42 @@ const appRouter = router({
 const server = createHTTPServer({
 	router: appRouter,
 	middleware: cors({
-		origin: process.env.NODE_ENV === 'production' 
-			? '*' // Allow all origins in production Docker
-			: [
+		origin: (origin, callback) => {
+			// Allow requests with no origin (like mobile apps or curl requests)
+			if (!origin) return callback(null, true);
+
+			// In production, allow any origin that matches the expected pattern
+			if (process.env.NODE_ENV === 'production') {
+				// Allow any HTTPS origin, plus localhost for development
+				const allowedPatterns = [
+					/^https:\/\/.*$/, // Any HTTPS origin
+					/^http:\/\/localhost(:\d+)?$/, // localhost with any port
+					/^http:\/\/127\.0\.0\.1(:\d+)?$/, // 127.0.0.1 with any port
+				];
+
+				const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+				return callback(null, isAllowed);
+			}
+
+			// In development, allow specific local origins
+			const allowedOrigins = [
 				'http://localhost:4173', // SvelteKit preview
 				'http://localhost:5173', // SvelteKit dev
 				'http://127.0.0.1:4173',
 				'http://127.0.0.1:5173',
 				'http://localhost:80', // Docker SvelteKit server
-				'http://127.0.0.1:80'
-			],
-		credentials: true
+				'http://127.0.0.1:80',
+				'https://localhost:4173', // HTTPS variants
+				'https://localhost:5173',
+				'https://127.0.0.1:4173',
+				'https://127.0.0.1:5173'
+			];
+
+			return callback(null, allowedOrigins.includes(origin));
+		},
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'trpc-batch-mode']
 	})
 });
 

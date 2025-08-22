@@ -38,7 +38,7 @@ COPY start.sh ./start.sh
 RUN chmod +x start.sh
 
 # Expose ports
-EXPOSE 3000 80
+EXPOSE 3001 80
 
 # Set environment variables
 ENV NODE_ENV=production
