@@ -4,7 +4,7 @@
 touch notes.db
 
 # Start the tRPC/database server in the background
-echo "Starting tRPC server on port 3000..."
+echo "Starting tRPC server on port 3001..."
 npm run start &
 
 # Wait a moment for the tRPC server to start
