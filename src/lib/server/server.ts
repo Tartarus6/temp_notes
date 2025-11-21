@@ -242,7 +242,7 @@ export type AppRouter = typeof appRouter;
 export type Note = typeof notesTable.$inferInsert;
 
 // Initialize database and start server
-async function startServer() {
+export async function startServer() {
 	try {
 		await initializeDatabase();
 		server.listen(listenPort);
@@ -252,5 +252,3 @@ async function startServer() {
 		process.exit(1);
 	}
 }
-
-startServer();
