@@ -26,7 +26,7 @@
 	import Image from '@tiptap/extension-image';
 
 	// Functional extensions
-	import History from '@tiptap/extension-history';
+	import { UndoRedo } from '@tiptap/extensions';
 	import Link from '@tiptap/extension-link';
 
 	// App imports
@@ -287,7 +287,7 @@
 						target: '_blank'
 					}
 				}),
-				History
+				UndoRedo,
 			],
 			content: editorState.note?.content || '<p>Hello World!</p>',
 			onUpdate: ({ editor }) => {
